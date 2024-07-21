@@ -19,9 +19,12 @@ public class UserController {
   }
 
   @PostMapping
-  public ResponseEntity<Void> create(@RequestBody CreateUserDto user){
-    userService.create(user);
+  public ResponseEntity<List<String>> create(@RequestBody CreateUserDto user){
+    var created = userService.create(user);
+    if (created.isEmpty()){
     return  ResponseEntity.ok().build();
+    }
+    return ResponseEntity.badRequest().body(created);
   }
 
   @GetMapping

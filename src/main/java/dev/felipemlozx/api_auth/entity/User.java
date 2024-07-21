@@ -1,6 +1,5 @@
 package dev.felipemlozx.api_auth.entity;
 
-import dev.felipemlozx.api_auth.services.CryptoService;
 import jakarta.persistence.*;
 
 @Entity
@@ -11,19 +10,11 @@ public class User {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
   private String name;
+  @Column(unique = true)
   private String email;
   private String password;
 
   public User() {
-  }
-
-
-  public String getRawPassword() {
-    return rawPassword;
-  }
-
-  public void setRawPassword(String rawPassword) {
-    this.rawPassword = rawPassword;
   }
 
   public Long getId() {
@@ -58,13 +49,4 @@ public class User {
     this.password = password;
   }
 
-  @PrePersist
-  public void prePersist(){
-    this.password = CryptoService.encrypt(password);
-  }
-
-  @PostLoad
-  public void postLoad(){
-    this.password = CryptoService.decrypt(password);
-  }
 }
