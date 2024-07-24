@@ -11,9 +11,4 @@ public class ApiAuthApplication {
   public static void main(String[] args) {
     SpringApplication.run(ApiAuthApplication.class, args);
   }
-
-  @Bean
-  public BCryptPasswordEncoder getGetBcryptPasswordEncoder() {
-    return new BCryptPasswordEncoder();
-  }
 }

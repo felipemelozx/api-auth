@@ -1,12 +1,14 @@
 package dev.felipemlozx.api_auth.services;
 
 import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
+import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
 import dev.felipemlozx.api_auth.entity.User;
 import dev.felipemlozx.api_auth.repository.UserRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
+import dev.felipemlozx.api_auth.infra.security.TokenService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -14,7 +16,8 @@ import java.util.regex.Pattern;
 @Service
 public class UserService {
   private final UserRepository userRepository;
-  private final BCryptPasswordEncoder passwordEncoder;
+  private final PasswordEncoder passwordEncoder;
+  private final TokenService tokenService;
 
   private static final String LOWERCASE_REGEX = "(?=.*[a-z])";
   private static final String UPPERCASE_REGEX = "(?=.*[A-Z])";
@@ -29,12 +32,15 @@ public class UserService {
   private static final String SPECIAL_CHAR_ERROR = "Password must contain at least one special character.";
   private static final String LENGTH_ERROR = "Password must be at least 8 characters long.";
   private static final String EMAIL_INVALID = "Email is not valid";
-  public UserService(UserRepository userRepository, BCryptPasswordEncoder encoder) {
+
+  public UserService(UserRepository userRepository, PasswordEncoder encoder, TokenService tokenService) {
     this.userRepository = userRepository;
     this.passwordEncoder = encoder;
+    this.tokenService = tokenService;
   }
+
   @Transactional
-  public List<String> create(CreateUserDto userDto){
+  public List<String> register(CreateUserDto userDto){
     var errors = validatePasswordEmail(userDto.password(), userDto.email());
 
     if (errors.isEmpty()) {
@@ -47,8 +53,14 @@ public class UserService {
    return errors;
   }
 
-  public List<User> listUser(){
-    return userRepository.findAll();
+  public String login(LoginDTO userLogin) {
+    User user = userRepository.findByEmail(userLogin.email())
+        .orElseThrow(() -> new RuntimeException("User not found."));
+
+    if(passwordEncoder.matches(userLogin.password(), user.getPassword())){
+      return this.tokenService.generateToken(user);
+    };
+    return null;
   }
 
   public static List<String> validatePasswordEmail(String password, String email) {
@@ -75,4 +87,6 @@ public class UserService {
 
     return errors;
   }
+
+
 }

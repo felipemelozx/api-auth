@@ -20,16 +20,11 @@ public class UserController {
 
   @PostMapping
   public ResponseEntity<List<String>> create(@RequestBody CreateUserDto user){
-    var created = userService.create(user);
+    var created = userService.register(user);
     if (created.isEmpty()){
     return  ResponseEntity.ok().build();
     }
     return ResponseEntity.badRequest().body(created);
   }
 
-  @GetMapping
-  public ResponseEntity<List<User>> listAll(){
-    var body = userService.listUser();
-    return  ResponseEntity.ok(body);
-  }
 }
