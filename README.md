@@ -69,7 +69,6 @@ The main features of the application are:
 
 ## Links
 
-- Deploy on : ...
 - Repository: https://github.com/felipemelozx/api-auth
 
 ## Versioning
