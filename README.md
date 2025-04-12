@@ -14,7 +14,6 @@ Here are the technologies used in this project:
 ## Services Used
 
 * GitHub
-* Render
 
 ## Dependencies
 

@@ -1,6 +1,7 @@
 package dev.felipemlozx.api_auth.controller;
 
 import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
+import dev.felipemlozx.api_auth.controller.dto.UserResponse;
 import dev.felipemlozx.api_auth.entity.User;
 import dev.felipemlozx.api_auth.services.UserService;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,13 @@ public class UserController {
 
   public UserController(UserService userService) {
     this.userService = userService;
+  }
+
+  @GetMapping("/{id}")
+  public ResponseEntity<UserResponse> findById(@PathVariable(name = "id") Long id){
+    User user = userService.findById(id);
+    UserResponse userResponse = UserResponse.fromUser(user);
+    return  ResponseEntity.ok(userResponse);
   }
 
   @PostMapping

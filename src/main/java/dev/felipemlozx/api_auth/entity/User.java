@@ -2,6 +2,9 @@ package dev.felipemlozx.api_auth.entity;
 
 import jakarta.persistence.*;
 
+import java.sql.Timestamp;
+import java.time.Instant;
+
 @Entity
 @Table(name = "tb_user")
 public class User {
@@ -13,8 +16,18 @@ public class User {
   @Column(unique = true)
   private String email;
   private String password;
+  @Column(name = "timeVerify", updatable = false)
+  private Instant timeVerify;
+  private boolean verified;
 
   public User() {
+  }
+
+  @PrePersist
+  protected void onCreate() {
+    if (timeVerify == null) {
+      timeVerify = Instant.now().plusSeconds(1800);
+    }
   }
 
   public Long getId() {
@@ -49,4 +62,19 @@ public class User {
     this.password = password;
   }
 
+  public boolean isVerified() {
+    return verified;
+  }
+
+  public void setVerified(boolean verified) {
+    this.verified = verified;
+  }
+
+  public Instant getTimeVerify() {
+    return timeVerify;
+  }
+
+  public void setTimeVerify(Instant timeVerify) {
+    this.timeVerify = timeVerify;
+  }
 }
