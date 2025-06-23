@@ -5,6 +5,7 @@ import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
 import dev.felipemlozx.api_auth.controller.dto.ResponseLoginDTO;
 import dev.felipemlozx.api_auth.services.EmailService;
 import dev.felipemlozx.api_auth.services.UserService;
+import dev.felipemlozx.api_auth.utils.ApiResponse;
 import jakarta.mail.MessagingException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,29 +26,32 @@ public class AuthController {
   }
 
   @PostMapping("/register")
-  public ResponseEntity<List<String>> register(@RequestBody CreateUserDto body) throws MessagingException {
+  public ResponseEntity<ApiResponse<List<String>>> register(@RequestBody CreateUserDto body) throws MessagingException {
       var fails = userService.register(body);
       if (fails.isEmpty()){
         String linkVerify = userService.generateEmailVerify(body.email());
         emailService.sendEmail(body.email(), body.name(), linkVerify);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        return ResponseEntity
+            .status(HttpStatus.CREATED).
+            body(ApiResponse
+                .success("User registered. Verification email sent.", null));
       }
-    return ResponseEntity.badRequest().body(fails);
+    return ResponseEntity.badRequest().body(ApiResponse.error(fails));
   }
 
   @PostMapping("/login")
-  public ResponseEntity<ResponseLoginDTO> login(@RequestBody LoginDTO body){
+  public ResponseEntity<ApiResponse<ResponseLoginDTO>> login(@RequestBody LoginDTO body){
     var response = userService.login(body);
-    if (response.equals("Email not verify")) {
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ResponseLoginDTO(body.email()));
-    }
-    return ResponseEntity.ok().body(new ResponseLoginDTO(body.email(), response));
+
+    return ResponseEntity
+        .ok()
+        .body(ApiResponse
+         .success("User logged in successfully", new ResponseLoginDTO(body.email(), response)));
   }
 
   @GetMapping("/verifyEmail/{id}")
-  public ResponseEntity<String> verifyEmail(@PathVariable(name = "id") String token){
+  public ResponseEntity<ApiResponse<String>> verifyEmail(@PathVariable(name = "id") String token){
     var email = userService.verifyEmailToken(token);
-    return ResponseEntity.ok().body(email);
+    return ResponseEntity.ok().body(ApiResponse.success(email));
   }
-
 }
