@@ -52,3 +52,4 @@ jobs:
       - name: Stop Docker Compose
         if: always()
         run: docker compose -f ./docker/docker-compose.yaml down
+
