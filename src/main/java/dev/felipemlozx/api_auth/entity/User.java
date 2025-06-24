@@ -2,7 +2,6 @@ package dev.felipemlozx.api_auth.entity;
 
 import jakarta.persistence.*;
 
-import java.sql.Timestamp;
 import java.time.Instant;
 
 @Entity
@@ -21,6 +20,13 @@ public class User {
   private boolean verified;
 
   public User() {
+  }
+
+  public User(String name, String email, String password, boolean verified) {
+    this.name = name;
+    this.email = email;
+    this.password = password;
+    this.verified = verified;
   }
 
   @PrePersist
