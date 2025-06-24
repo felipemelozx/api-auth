@@ -1,8 +1,7 @@
-package dev.felipemlozx.api_auth.service;
+package dev.felipemlozx.api_auth.services;
 
 import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
 import dev.felipemlozx.api_auth.repository.UserRepository;
-import dev.felipemlozx.api_auth.services.UserService;
 import dev.felipemlozx.api_auth.utils.CheckUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
