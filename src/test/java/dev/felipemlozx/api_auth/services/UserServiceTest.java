@@ -20,6 +20,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -121,5 +122,27 @@ class UserServiceTest {
     when(passwordEncoder.matches(loginDTO.password(), user.getPassword())).thenReturn(false);
     boolean result = userService.login(loginDTO);
     assertFalse(result);
+  }
+
+  @Test
+  void shouldThrowExceptionWhenUserNotFoundById() {
+    long id = 1;
+    when(userRepository.findById(id)).thenReturn(Optional.empty());
+
+    RuntimeException ex = assertThrows(RuntimeException.class,
+        () -> userService.findById(id));
+    assertEquals("User not found.", ex.getMessage());
+  }
+
+  @Test
+  void shouldReturnUserWhenUserExistsById() {
+    long id = 1;
+    User user = new User("test", "test@test.com","Password!32", true);
+    when(userRepository.findById(id)).thenReturn(Optional.of(user));
+
+    User result = userService.findById(id);
+    assertNotNull(result);
+    assertEquals(user, result);
+    assertEquals(user.getEmail(), result.getEmail());
   }
 }
