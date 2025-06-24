@@ -41,18 +41,15 @@ public class UserService {
     return errors;
   }
 
-  public String login(LoginDTO userLogin) {
+  public Boolean login(LoginDTO userLogin) {
     User user = userRepository.findByEmail(userLogin.email())
         .orElseThrow(() -> new RuntimeException("User not found."));
 
     if(!user.isVerified()){
-      return "Email not verify";
+      throw new RuntimeException("Email not verify");
     }
 
-    if(passwordEncoder.matches(userLogin.password(), user.getPassword())){
-      return this.tokenService.generateToken(user.getEmail());
-    }
-    return null;
+    return passwordEncoder.matches(userLogin.password(), user.getPassword());
   }
 
   public String generateEmailVerify(String email) {
@@ -89,6 +86,5 @@ public class UserService {
     return userRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("User not found."));
   }
-
 
 }

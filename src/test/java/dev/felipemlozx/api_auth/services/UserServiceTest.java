@@ -1,6 +1,8 @@
 package dev.felipemlozx.api_auth.services;
 
 import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
+import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
+import dev.felipemlozx.api_auth.entity.User;
 import dev.felipemlozx.api_auth.repository.UserRepository;
 import dev.felipemlozx.api_auth.utils.CheckUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,8 +16,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -75,5 +81,68 @@ class UserServiceTest {
       assertEquals(errors, result);
       verify(userRepository, never()).save(any());
     }
+  }
+
+  @Test
+  void shouldThrowsErrorWhenEmailIsNotVerify() {
+    LoginDTO loginDTO = new LoginDTO("test@test.com", "Password!32");
+    User user = new User("test", "test@test.com","Password!32", false);
+    when(userRepository.findByEmail(loginDTO.email())).thenReturn(Optional.of(user));
+
+    RuntimeException ex = assertThrows(RuntimeException.class,
+        () -> userService.login(loginDTO));
+    assertEquals("Email not verify", ex.getMessage());
+  }
+
+  @Test
+  void shouldThrowsErrorWhenUserIsNotFound() {
+    LoginDTO loginDTO = new LoginDTO("test@test.com", "Password!32");
+    when(userRepository.findByEmail(loginDTO.email())).thenReturn(Optional.empty());
+
+    RuntimeException ex = assertThrows(RuntimeException.class,
+        () -> userService.login(loginDTO));
+    assertEquals("User not found.", ex.getMessage());
+  }
+
+  @Test
+  void shouldReturnTrueWhenPasswordIsEquals() {
+    LoginDTO loginDTO = new LoginDTO("test@test.com", "Password!32");
+    User user = new User("test", "test@test.com","Password!32", true);
+    when(userRepository.findByEmail(loginDTO.email())).thenReturn(Optional.of(user));
+    when(passwordEncoder.matches(loginDTO.password(), user.getPassword())).thenReturn(true);
+    boolean result = userService.login(loginDTO);
+    assertTrue(result);
+  }
+
+  @Test
+  void shouldReturnFalseWhenPasswordIsEquals() {
+    LoginDTO loginDTO = new LoginDTO("test@test.com", "Password!32");
+    User user = new User("test", "test@test.com","Password32", true);
+    when(userRepository.findByEmail(loginDTO.email())).thenReturn(Optional.of(user));
+    when(passwordEncoder.matches(loginDTO.password(), user.getPassword())).thenReturn(false);
+    boolean result = userService.login(loginDTO);
+    assertFalse(result);
+  }
+
+  @Test
+  void shouldThrowExceptionWhenUserNotFoundById() {
+    long id = 1;
+    when(userRepository.findById(id)).thenReturn(Optional.empty());
+
+    RuntimeException ex = assertThrows(RuntimeException.class,
+        () -> userService.findById(id));
+    assertEquals("User not found.", ex.getMessage());
+  }
+
+  @Test
+  void shouldReturnUserWhenUserExistsById() {
+    long id = 1;
+    User user = new User("test", "test@test.com","Password!32", true);
+    when(userRepository.findById(id)).thenReturn(Optional.of(user));
+
+    User result = userService.findById(id);
+    assertNotNull(result);
+    assertEquals(user, result);
+    assertEquals(user.getEmail(), result.getEmail());
   }
 }

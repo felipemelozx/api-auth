@@ -46,7 +46,7 @@ public class AuthController {
     return ResponseEntity
         .ok()
         .body(ApiResponse
-         .success("User logged in successfully", new ResponseLoginDTO(body.email(), response)));
+         .success("User logged in successfully", new ResponseLoginDTO(body.email(), "response")));
   }
 
   @GetMapping("/verifyEmail/{id}")
