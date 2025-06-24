@@ -34,7 +34,7 @@ jobs:
 
       # Sobe os serviços com Docker Compose
       - name: Start Docker Compose
-        run: docker compose -f ./docker/docker-compose.yml up -d
+        run: docker compose -f ./docker/docker-compose.yaml up -d
 
       # Compila e executa os testes
       - name: Build and Test
