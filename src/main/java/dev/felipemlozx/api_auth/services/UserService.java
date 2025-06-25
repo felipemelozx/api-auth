@@ -13,6 +13,7 @@ import dev.felipemlozx.api_auth.infra.security.TokenService;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -29,10 +30,10 @@ public class UserService {
 
   @Transactional
   public List<String> register(CreateUserDto userDto){
-    var errors = CheckUtils.validatePasswordAndEmail(userDto.password(), userDto.email());
+    List<String> errors = CheckUtils.validatePasswordAndEmail(userDto.password(), userDto.email());
 
     if (errors.isEmpty()) {
-      var user = new User();
+      User user = new User();
       user.setName(userDto.name());
       user.setEmail(userDto.email());
       user.setPassword(passwordEncoder.encode(userDto.password()));
@@ -53,29 +54,31 @@ public class UserService {
   }
 
   public String generateEmailVerify(String email) {
-    var token = tokenService.generateToken(email);
-    return "http://localhost:8080/auth/verifyEmail/" + token;
+    userRepository.findByEmail(email)
+        .orElseThrow(() -> new RuntimeException("User not found."));
+    UUID token = UUID.randomUUID();
+    return token.toString();
   }
 
-  public String verifyEmailToken(String token){
-    var email = tokenService.validateToken(token);
-    var user = userRepository.findByEmail(email)
+  public Boolean verifyEmailToken(String token){
+    String email = tokenService.validateToken(token);
+    User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new RuntimeException("Link invalid."));
 
-    var isValid = Instant.now().isBefore(user.getTimeVerify());
+    boolean isValid = Instant.now().isBefore(user.getTimeVerify());
     if(!isValid){
-      return "Time is over";
+      return false;
     }
     user.setVerified(true);
     userRepository.save(user);
-    return "verified user";
+    return true;
   }
 
   @Scheduled(fixedRate = 50000)
   public void deleteUserNotVerify() {
-    var userList = userRepository.findByVerifiedIsFalse();
+    List<User> userList = userRepository.findByVerifiedIsFalse();
    for(User user : userList){
-     var isValid = Instant.now().isBefore(user.getTimeVerify());
+     boolean isValid = Instant.now().isBefore(user.getTimeVerify());
      if(!isValid){
        userRepository.delete(user);
      }
@@ -86,5 +89,4 @@ public class UserService {
     return userRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("User not found."));
   }
-
 }

@@ -50,7 +50,7 @@ public class AuthController {
   }
 
   @GetMapping("/verifyEmail/{id}")
-  public ResponseEntity<ApiResponse<String>> verifyEmail(@PathVariable(name = "id") String token){
+  public ResponseEntity<ApiResponse<Boolean>> verifyEmail(@PathVariable(name = "id") String token){
     var email = userService.verifyEmailToken(token);
     return ResponseEntity.ok().body(ApiResponse.success(email));
   }
