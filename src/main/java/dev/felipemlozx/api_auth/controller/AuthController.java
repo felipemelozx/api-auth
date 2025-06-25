@@ -29,7 +29,7 @@ public class AuthController {
   public ResponseEntity<ApiResponse<List<String>>> register(@RequestBody CreateUserDto body) throws MessagingException {
       var fails = userService.register(body);
       if (fails.isEmpty()){
-        String linkVerify = userService.generateEmailVerify(body.email());
+        String linkVerify = userService.createEmailVerificationToken(body.email());
         emailService.sendEmail(body.email(), body.name(), linkVerify);
         return ResponseEntity
             .status(HttpStatus.CREATED).

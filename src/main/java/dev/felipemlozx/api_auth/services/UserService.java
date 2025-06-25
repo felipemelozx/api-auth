@@ -6,6 +6,8 @@ import dev.felipemlozx.api_auth.entity.User;
 import dev.felipemlozx.api_auth.repository.UserRepository;
 import dev.felipemlozx.api_auth.utils.CheckUtils;
 import jakarta.transaction.Transactional;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,15 +19,35 @@ import java.util.UUID;
 
 @Service
 public class UserService {
+
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final TokenService tokenService;
+  private final CacheManager cacheManager;
 
-
-  public UserService(UserRepository userRepository, PasswordEncoder encoder, TokenService tokenService) {
+  public UserService(UserRepository userRepository, PasswordEncoder encoder, TokenService tokenService, CacheManager cacheManager) {
     this.userRepository = userRepository;
     this.passwordEncoder = encoder;
     this.tokenService = tokenService;
+    this.cacheManager = cacheManager;
+  }
+
+  public void saveToken(String email, String token) {
+    Cache cache = cacheManager.getCache("EmailVerificationTokens");
+    if (cache != null) {
+      cache.put(email, token);
+    }
+  }
+
+  public String recuperarToken(String email) {
+    Cache cache = cacheManager.getCache("EmailVerificationTokens");
+    if (cache != null) {
+      Cache.ValueWrapper wrapper = cache.get(email);
+      if (wrapper != null) {
+        return (String) wrapper.get();
+      }
+    }
+    return null;
   }
 
   @Transactional
@@ -53,10 +75,11 @@ public class UserService {
     return passwordEncoder.matches(userLogin.password(), user.getPassword());
   }
 
-  public String generateEmailVerify(String email) {
+  public String createEmailVerificationToken(String email) {
     userRepository.findByEmail(email)
         .orElseThrow(() -> new RuntimeException("User not found."));
     UUID token = UUID.randomUUID();
+    saveToken(email, token.toString());
     return token.toString();
   }
 
