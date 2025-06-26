@@ -11,7 +11,6 @@ import org.springframework.cache.CacheManager;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import dev.felipemlozx.api_auth.infra.security.TokenService;
 
 import java.time.Instant;
 import java.util.List;
@@ -22,13 +21,11 @@ public class UserService {
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
-  private final TokenService tokenService;
   private final CacheManager cacheManager;
 
-  public UserService(UserRepository userRepository, PasswordEncoder encoder, TokenService tokenService, CacheManager cacheManager) {
+  public UserService(UserRepository userRepository, PasswordEncoder encoder,  CacheManager cacheManager) {
     this.userRepository = userRepository;
     this.passwordEncoder = encoder;
-    this.tokenService = tokenService;
     this.cacheManager = cacheManager;
   }
 
