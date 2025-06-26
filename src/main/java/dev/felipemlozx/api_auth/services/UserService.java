@@ -32,17 +32,17 @@ public class UserService {
     this.cacheManager = cacheManager;
   }
 
-  public void saveToken(String email, String token) {
+  public void saveToken(String token, String email) {
     Cache cache = cacheManager.getCache("EmailVerificationTokens");
     if (cache != null) {
-      cache.put(email, token);
+      cache.put(token, email);
     }
   }
 
-  public String recuperarToken(String email) {
+  public String recuperarToken(String token) {
     Cache cache = cacheManager.getCache("EmailVerificationTokens");
     if (cache != null) {
-      Cache.ValueWrapper wrapper = cache.get(email);
+      Cache.ValueWrapper wrapper = cache.get(token);
       if (wrapper != null) {
         return (String) wrapper.get();
       }
@@ -79,12 +79,12 @@ public class UserService {
     userRepository.findByEmail(email)
         .orElseThrow(() -> new RuntimeException("User not found."));
     UUID token = UUID.randomUUID();
-    saveToken(email, token.toString());
+    saveToken(token.toString(), email);
     return token.toString();
   }
 
-  public Boolean verifyEmailToken(String token){
-    String email = tokenService.validateToken(token);
+  public Boolean verifyEmailToken(String token) {
+    String email = recuperarToken(token);
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new RuntimeException("Link invalid."));
 
@@ -100,12 +100,12 @@ public class UserService {
   @Scheduled(fixedRate = 50000)
   public void deleteUserNotVerify() {
     List<User> userList = userRepository.findByVerifiedIsFalse();
-   for(User user : userList){
-     boolean isValid = Instant.now().isBefore(user.getTimeVerify());
-     if(!isValid){
-       userRepository.delete(user);
-     }
-   }
+    for(User user : userList){
+      boolean isValid = Instant.now().isBefore(user.getTimeVerify());
+      if(!isValid){
+        userRepository.delete(user);
+      }
+    }
   }
 
   public User findById(Long id){
