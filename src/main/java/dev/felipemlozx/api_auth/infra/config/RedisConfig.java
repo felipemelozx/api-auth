@@ -18,7 +18,7 @@ public class RedisConfig {
   @Bean
   public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
     RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
-        .entryTtl(Duration.ofMinutes(5))
+        .entryTtl(Duration.ofMinutes(15))
         .serializeValuesWith(
             RedisSerializationContext.SerializationPair.fromSerializer(RedisSerializer.json())
         );

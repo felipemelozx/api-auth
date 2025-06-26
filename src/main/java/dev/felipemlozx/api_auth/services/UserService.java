@@ -94,7 +94,8 @@ public class UserService {
     return true;
   }
 
-  @Scheduled(fixedRate = 50000)
+  // 30 minutos em milissegundos
+  @Scheduled(fixedRate = 1800000)
   public void deleteUserNotVerify() {
     List<User> userList = userRepository.findByVerifiedIsFalse();
     for(User user : userList){
