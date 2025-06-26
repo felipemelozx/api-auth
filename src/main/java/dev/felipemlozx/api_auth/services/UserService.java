@@ -6,33 +6,53 @@ import dev.felipemlozx.api_auth.entity.User;
 import dev.felipemlozx.api_auth.repository.UserRepository;
 import dev.felipemlozx.api_auth.utils.CheckUtils;
 import jakarta.transaction.Transactional;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import dev.felipemlozx.api_auth.infra.security.TokenService;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class UserService {
+
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
-  private final TokenService tokenService;
+  private final CacheManager cacheManager;
 
-
-  public UserService(UserRepository userRepository, PasswordEncoder encoder, TokenService tokenService) {
+  public UserService(UserRepository userRepository, PasswordEncoder encoder,  CacheManager cacheManager) {
     this.userRepository = userRepository;
     this.passwordEncoder = encoder;
-    this.tokenService = tokenService;
+    this.cacheManager = cacheManager;
+  }
+
+  public void saveToken(String token, String email) {
+    Cache cache = cacheManager.getCache("EmailVerificationTokens");
+    if (cache != null) {
+      cache.put(token, email);
+    }
+  }
+
+  public String recuperarToken(String token) {
+    Cache cache = cacheManager.getCache("EmailVerificationTokens");
+    if (cache != null) {
+      Cache.ValueWrapper wrapper = cache.get(token);
+      if (wrapper != null) {
+        return (String) wrapper.get();
+      }
+    }
+    return null;
   }
 
   @Transactional
   public List<String> register(CreateUserDto userDto){
-    var errors = CheckUtils.validatePasswordAndEmail(userDto.password(), userDto.email());
+    List<String> errors = CheckUtils.validatePasswordAndEmail(userDto.password(), userDto.email());
 
     if (errors.isEmpty()) {
-      var user = new User();
+      User user = new User();
       user.setName(userDto.name());
       user.setEmail(userDto.email());
       user.setPassword(passwordEncoder.encode(userDto.password()));
@@ -52,39 +72,42 @@ public class UserService {
     return passwordEncoder.matches(userLogin.password(), user.getPassword());
   }
 
-  public String generateEmailVerify(String email) {
-    var token = tokenService.generateToken(email);
-    return "http://localhost:8080/auth/verifyEmail/" + token;
+  public String createEmailVerificationToken(String email) {
+    userRepository.findByEmail(email)
+        .orElseThrow(() -> new RuntimeException("User not found."));
+    UUID token = UUID.randomUUID();
+    saveToken(token.toString(), email);
+    return token.toString();
   }
 
-  public String verifyEmailToken(String token){
-    var email = tokenService.validateToken(token);
-    var user = userRepository.findByEmail(email)
+  public Boolean verifyEmailToken(String token) {
+    String email = recuperarToken(token);
+    User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new RuntimeException("Link invalid."));
 
-    var isValid = Instant.now().isBefore(user.getTimeVerify());
+    boolean isValid = Instant.now().isBefore(user.getTimeVerify());
     if(!isValid){
-      return "Time is over";
+      return false;
     }
     user.setVerified(true);
     userRepository.save(user);
-    return "verified user";
+    return true;
   }
 
-  @Scheduled(fixedRate = 50000)
+  // 30 minutos em milissegundos
+  @Scheduled(fixedRate = 1800000)
   public void deleteUserNotVerify() {
-    var userList = userRepository.findByVerifiedIsFalse();
-   for(User user : userList){
-     var isValid = Instant.now().isBefore(user.getTimeVerify());
-     if(!isValid){
-       userRepository.delete(user);
-     }
-   }
+    List<User> userList = userRepository.findByVerifiedIsFalse();
+    for(User user : userList){
+      boolean isValid = Instant.now().isBefore(user.getTimeVerify());
+      if(!isValid){
+        userRepository.delete(user);
+      }
+    }
   }
 
   public User findById(Long id){
     return userRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("User not found."));
   }
-
 }
