@@ -14,6 +14,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -144,5 +145,28 @@ class UserServiceTest {
     assertNotNull(result);
     assertEquals(user, result);
     assertEquals(user.getEmail(), result.getEmail());
+  }
+
+  @Test
+  void shouldDeleteUserNotVerify_whenTimeIsNotValid() {
+    User user1 = new User("test", "test@test.com","Password32", false);
+    User user2 = new User("test", "test@test.com","Password32", false);
+    User user3 = new User("test", "test@test.com","Password32", false);
+    user1.setTimeVerify(Instant.now().plusSeconds(500));
+    mockUserTime(user2);
+    mockUserTime(user3);
+    when(userRepository.findByVerifiedIsFalse()).thenReturn(List.of(user1,user2,user3));
+
+    userService.deleteUserNotVerify();
+    verify(userRepository, never()).delete(user1);
+    verify(userRepository).delete(user2);
+    verify(userRepository).delete(user3);
+  }
+
+  private void mockUserTime(User user) {
+    user.setTimeVerify(
+        Instant
+            .now()
+            .minusSeconds(600));
   }
 }
