@@ -12,6 +12,8 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
@@ -19,13 +21,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,6 +45,15 @@ class UserServiceTest {
 
   @Mock
   private PasswordEncoder passwordEncoder;
+
+  @Mock
+  private CacheManager cacheManager;
+
+  @Mock
+  private Cache cache;
+
+  @Mock
+  private Cache.ValueWrapper valueWrapper;
 
   @BeforeEach
   void setUp() {
@@ -163,6 +177,146 @@ class UserServiceTest {
     verify(userRepository).delete(user3);
   }
 
+  @Test
+  void shouldReturnTrueAndVerifyUser_whenEmailTokenIsValid() {
+    String token = "fake-token123";
+    String email = "teste@gmail.com";
+    User user = new User("name test", email, "Password", false);
+    user.setTimeVerify(Instant.now().plusSeconds(500));
+
+    when(cacheManager.getCache("EmailVerificationTokens")).thenReturn(cache);
+    when(cache.get(token)).thenReturn(valueWrapper);
+    when(valueWrapper.get()).thenReturn(email);
+    when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+    when(userRepository.save(user)).thenReturn(user);
+
+    Boolean result = userService.verifyEmailToken(token);
+    assertTrue(result);
+    assertTrue(user.isVerified());
+    verify(userRepository).save(user);
+  }
+
+  @Test
+  void shouldReturnFalseAndNotVerifyUser_whenEmailTokenIsExpired() {
+    String token = "fake-token123";
+    String email = "teste@gmail.com";
+    User user = new User("name test", email, "Password", false);
+    mockUserTime(user);
+
+    when(cacheManager.getCache("EmailVerificationTokens")).thenReturn(cache);
+    when(cache.get(token)).thenReturn(valueWrapper);
+    when(valueWrapper.get()).thenReturn(email);
+    when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+
+    Boolean result = userService.verifyEmailToken(token);
+    assertFalse(result);
+    assertFalse(user.isVerified());
+  }
+
+  @Test
+  void shouldThrowRuntimeException_whenEmailTokenUserNotFound() {
+    String token = "fake-token123";
+    String email = "teste@gmail.com";
+    when(cacheManager.getCache("EmailVerificationTokens")).thenReturn(cache);
+    when(cache.get(token)).thenReturn(valueWrapper);
+    when(valueWrapper.get()).thenReturn(email);
+    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+    RuntimeException ex = assertThrows(RuntimeException.class, () -> userService.verifyEmailToken(token));
+    assertEquals("Link invalid.", ex.getMessage());
+  }
+
+  @Test
+  void shouldCreateEmailVerificationToken_whenUserExists() {
+    String email = "teste@gmail.com";
+    User user = new User("name test", email, "Password", false);
+    when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+
+    String result = userService.createEmailVerificationToken(email);
+
+    verify(userRepository).findByEmail(email);
+    assertNotNull(result);
+  }
+
+  @Test
+  void shouldThrowRuntimeException_whenCreatingEmailVerificationTokenForNonexistentUser() {
+    String email = "teste@gmail.com";
+    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+    RuntimeException result = assertThrows(RuntimeException.class, () -> userService.createEmailVerificationToken(email));
+    verify(userRepository).findByEmail(email);
+    assertEquals("User not found.", result.getMessage());
+  }
+
+  @Test
+  void shouldSaveTokenInCache_whenCacheIsAvailable() {
+    String token = "test-token";
+    String email = "test@example.com";
+
+    when(cacheManager.getCache("EmailVerificationTokens")).thenReturn(cache);
+
+    userService.saveToken(token, email);
+
+    verify(cache).put(token, email);
+  }
+
+  @Test
+  void shouldNotThrow_whenSavingTokenAndCacheIsNull() {
+    String token = "test-token";
+    String email = "test@example.com";
+
+    when(cacheManager.getCache("EmailVerificationTokens")).thenReturn(null);
+
+    assertDoesNotThrow(() -> userService.saveToken(token, email));
+
+    verify(cache, never()).put(any(), any());
+  }
+
+  @Test
+  void shouldSaveTokenAndRetrieveFromCache() {
+    String token = "test-token";
+    String email = "test@example.com";
+
+    when(cacheManager.getCache("EmailVerificationTokens")).thenReturn(cache);
+    when(cache.get(token)).thenReturn(valueWrapper);
+    when(valueWrapper.get()).thenReturn(email);
+    userService.saveToken(token, email);
+
+    verify(cache).put(token, email);
+  }
+
+  @Test
+  void shouldReturnEmail_whenTokenExistsInCache() {
+    String token = "my-token";
+    String email = "email@example.com";
+
+    when(cacheManager.getCache("EmailVerificationTokens")).thenReturn(cache);
+    when(cache.get(token)).thenReturn(valueWrapper);
+    when(valueWrapper.get()).thenReturn(email);
+
+    String result = userService.recuperarToken(token);
+
+    assertEquals(email, result);
+  }
+
+  @Test
+  void shouldReturnNull_whenCacheIsNullOnTokenRetrieval() {
+    when(cacheManager.getCache("EmailVerificationTokens")).thenReturn(null);
+
+    String result = userService.recuperarToken("any-token");
+
+    assertNull(result);
+  }
+
+  @Test
+  void shouldReturnNull_whenTokenNotFoundInCache() {
+    when(cacheManager.getCache("EmailVerificationTokens")).thenReturn(cache);
+    when(cache.get("token-inexistente")).thenReturn(null);
+
+    String result = userService.recuperarToken("token-inexistente");
+
+    assertNull(result);
+  }
   private void mockUserTime(User user) {
     user.setTimeVerify(
         Instant
