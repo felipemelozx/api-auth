@@ -2,13 +2,11 @@ package dev.felipemlozx.api_auth.services;
 
 import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
 import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
-import dev.felipemlozx.api_auth.entity.User;
 import dev.felipemlozx.api_auth.infra.security.TokenService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -29,8 +27,10 @@ public class AuthService {
 
   public List<String> register(CreateUserDto body) throws MessagingException {
     List<String> result = userService.register(body);
-    String token = userService.createEmailVerificationToken(body.email());
-   // emailService.sendEmail(body.email(), body.name(), generateLinkToVerifyEmail(token));
+    if(result.isEmpty()){
+      String token = userService.createEmailVerificationToken(body.email());
+      emailService.sendEmail(body.email(), body.name(), generateLinkToVerifyEmail(token));
+    }
     return result;
   }
 
