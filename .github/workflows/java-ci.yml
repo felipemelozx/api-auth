@@ -24,6 +24,15 @@ jobs:
       REDIS_HOST: ${{ vars.REDIS_HOST }}
       REDIS_PORT: ${{ vars.REDIS_PORT }}
     steps:
+      - name: Create .env file for Docker Compose
+        run: |
+          cat <<EOF > ./docker/.env
+          MYSQL_PORT=${{ vars.MYSQL_PORT }}
+          MYSQL_DATABASE=${{ vars.MYSQL_DATABASE }}
+          MYSQL_USER=${{ vars.MYSQL_USER }}
+          MYSQL_PASSWORD=${{ vars.MYSQL_PASSWORD }}
+          REDIS_PORT=${{ vars.REDIS_PORT }}
+          EOF
       # Checkout do código da branch
       - name: Checkout code
         uses: actions/checkout@v2
