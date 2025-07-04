@@ -10,13 +10,24 @@ jobs:
   build:
     name: Build and Test Java Application
     runs-on: ubuntu-latest
+    env:
+      API_SECRET_KEY: ${{ vars.API_SECRET_KEY }}
+      MYSQL_PORT: ${{ vars.MYSQL_PORT }}
+      MYSQL_DATABASE: ${{ vars.MYSQL_DATABASE }}
+      MYSQL_USER: ${{ vars.MYSQL_USER }}
+      MYSQL_PASSWORD: ${{ vars.MYSQL_PASSWORD }}
+      MYSQL_URL: ${{ vars.MYSQL_URL }}
+      EMAIL_HOST: ${{ vars.EMAIL_HOST }}
+      EMAIL_PORT: ${{ vars.EMAIL_PORT }}
+      USER_EMAIL: ${{ vars.USER_EMAIL }}
+      EMAIL_PASSWORD: ${{ vars.EMAIL_PASSWORD }}
+      REDIS_HOST: ${{ vars.REDIS_HOST }}
+      REDIS_PORT: ${{ vars.REDIS_PORT }}
 
     steps:
-      # Checkout do código da branch
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Cache do Maven para acelerar builds
       - name: Cache Maven packages
         uses: actions/cache@v3
         with:
@@ -25,31 +36,40 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      # Setup do JDK 21
       - name: Set up JDK 21
         uses: actions/setup-java@v2
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      # Sobe os serviços com Docker Compose
-      - name: Start Docker Compose
-        run: docker compose -f ./docker/docker-compose.yaml up -d
+      - name: Create .env file for Docker Compose
+        run: |
+          cat <<EOF > ./docker/.env
+          MYSQL_PORT=${{ vars.MYSQL_PORT }}
+          MYSQL_DATABASE=${{ vars.MYSQL_DATABASE }}
+          MYSQL_USER=${{ vars.MYSQL_USER }}
+          MYSQL_PASSWORD=${{ vars.MYSQL_PASSWORD }}
+          REDIS_PORT=${{ vars.REDIS_PORT }}
+          EOF
 
-      # Compila e executa os testes
+      - name: Start Docker Compose
+        run: docker compose --env-file ./docker/.env -f ./docker/docker-compose.yaml up -d
+
+      - name: Wait for MySQL to be ready
+        run: |
+          echo "Waiting for MySQL..."
+          for i in {1..30}; do
+            nc -z 127.0.0.1 ${{ vars.MYSQL_PORT }} && echo "MySQL is up!" && exit 0
+            sleep 2
+          done
+          echo "MySQL did not start in time." && exit 1
+
       - name: Build and Test
         run: mvn clean verify
 
-      # Verifica estilo de código
-     # - name: Run Checkstyle
-      #  run: mvn checkstyle:check
-
-      # Gera o .jar final
       - name: Build JAR file
         run: mvn package -DskipTests
 
-      # Encerra os containers
       - name: Stop Docker Compose
         if: always()
-        run: docker compose -f ./docker/docker-compose.yaml down
-
+        run: docker compose --env-file ./docker/.env -f ./docker/docker-compose.yaml down
