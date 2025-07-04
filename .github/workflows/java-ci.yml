@@ -11,18 +11,18 @@ jobs:
     name: Build and Test Java Application
     runs-on: ubuntu-latest
     env:
-      API_SECRET_KEY: ${{ secrets.API_SECRET_KEY }}
-      MYSQL_PORT: ${{ secrets.MYSQL_PORT }}
-      MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
-      MYSQL_USER: ${{ secrets.MYSQL_USER }}
-      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-      MYSQL_URL: ${{ secrets.MYSQL_URL }}
-      EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
-      EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
-      USER_EMAIL: ${{ secrets.USER_EMAIL }}
-      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-      REDIS_HOST: ${{ secrets.REDIS_HOST }}
-      REDIS_PORT: ${{ secrets.REDIS_PORT }}
+      API_SECRET_KEY: ${{ vars.API_SECRET_KEY }}
+      MYSQL_PORT: ${{ vars.MYSQL_PORT }}
+      MYSQL_DATABASE: ${{ vars.MYSQL_DATABASE }}
+      MYSQL_USER: ${{ vars.MYSQL_USER }}
+      MYSQL_PASSWORD: ${{ vars.MYSQL_PASSWORD }}
+      MYSQL_URL: ${{ vars.MYSQL_URL }}
+      EMAIL_HOST: ${{ vars.EMAIL_HOST }}
+      EMAIL_PORT: ${{ vars.EMAIL_PORT }}
+      USER_EMAIL: ${{ vars.USER_EMAIL }}
+      EMAIL_PASSWORD: ${{ vars.EMAIL_PASSWORD }}
+      REDIS_HOST: ${{ vars.REDIS_HOST }}
+      REDIS_PORT: ${{ vars.REDIS_PORT }}
     steps:
       # Checkout do código da branch
       - name: Checkout code
