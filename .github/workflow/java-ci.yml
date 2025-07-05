@@ -50,6 +50,7 @@ jobs:
             sleep 2
           done
           echo "MySQL did not start in time." && exit 1
+          
 
       - name: Start Docker Compose
         run: docker compose --env-file ./docker/.env -f ./docker/docker-compose.yaml up -d
