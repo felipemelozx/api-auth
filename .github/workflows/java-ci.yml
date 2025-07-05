@@ -44,13 +44,13 @@ jobs:
 
       - name: Create .env file for Docker Compose
         run: |
-          cat <<EOF > ./docker/.env
-          MYSQL_PORT=${{ vars.MYSQL_PORT }}
-          MYSQL_DATABASE=${{ vars.MYSQL_DATABASE }}
-          MYSQL_USER=${{ vars.MYSQL_USER }}
-          MYSQL_PASSWORD=${{ vars.MYSQL_PASSWORD }}
-          REDIS_PORT=${{ vars.REDIS_PORT }}
-          EOF
+          echo "Waiting for MySQL on port $MYSQL_PORT..."
+          for i in {1..30}; do
+            nc -z 127.0.0.1 $MYSQL_PORT && echo "MySQL is up!" && exit 0
+            sleep 2
+          done
+          echo "MySQL did not start in time." && exit 1
+          
 
       - name: Start Docker Compose
         run: docker compose --env-file ./docker/.env -f ./docker/docker-compose.yaml up -d
