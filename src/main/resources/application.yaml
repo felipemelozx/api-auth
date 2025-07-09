@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: api-auth
+
+  datasource:
+    url: jdbc:mysql://dev:teste123@localhost:3306/testeDb
+    username: dev
+    password: teste123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: app.manager.bot.noreply@gmail.com
+    password: ${EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+    protocol: smtp
+
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000
+
+server:
+  servlet:
+    context-path: /api/v1
+
+api:
+  secret:
+    key: secrete
+
+API_URL: http://localhost:8080/api/v1
