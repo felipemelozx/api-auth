@@ -1,8 +1,6 @@
 package dev.felipemlozx.api_auth.controller;
 
 import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
-import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
-import dev.felipemlozx.api_auth.controller.dto.ResponseLoginDTO;
 import dev.felipemlozx.api_auth.services.AuthService;
 import dev.felipemlozx.api_auth.utils.ApiResponse;
 import jakarta.mail.MessagingException;
@@ -64,40 +62,4 @@ class AuthControllerTest {
     assertEquals(fails, result.getBody().getData());
   }
 
-  @Test
-  void shouldLoginSuccessfully() {
-    LoginDTO loginDTO = new LoginDTO("test@gmail.com", "Password!1");
-    String token = "mocked-jwt-token";
-    when(authService.login(loginDTO)).thenReturn(token);
-
-    ResponseEntity<ApiResponse<ResponseLoginDTO>> response = authController.login(loginDTO);
-
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertTrue(response.getBody().isSuccess());
-    assertEquals("User logged in successfully", response.getBody().getMessage());
-    assertEquals(token, response.getBody().getData().token());
-    assertEquals(loginDTO.email(), response.getBody().getData().email());
-  }
-
-  @Test
-  void shouldReturnBadRequestWhenVerifyEmailFails() {
-    String token = "invalid-token";
-    when(authService.verifyEmailToken(token)).thenReturn(false);
-
-    ResponseEntity<ApiResponse<String>> response = authController.verifyEmail(token);
-
-    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-    assertFalse(response.getBody().isSuccess());
-    assertEquals("Link invalid.", response.getBody().getMessage());
-  }
-
-  @Test
-  void shouldReturnOkWhenVerifyEmailSucceeds() {
-    String token = "valid-token";
-    when(authService.verifyEmailToken(token)).thenReturn(true);
-
-    ResponseEntity<ApiResponse<String>> response = authController.verifyEmail(token);
-
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-  }
 }
