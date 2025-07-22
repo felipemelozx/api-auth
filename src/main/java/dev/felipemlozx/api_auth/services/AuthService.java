@@ -2,9 +2,12 @@ package dev.felipemlozx.api_auth.services;
 
 import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
 import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
+import dev.felipemlozx.api_auth.controller.dto.ResponseLoginDTO;
 import dev.felipemlozx.api_auth.infra.security.TokenService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -29,24 +32,26 @@ public class AuthService {
     List<String> result = userService.register(body);
     if(result.isEmpty()){
       String token = userService.createEmailVerificationToken(body.email());
-      emailService.sendEmail(body.email(), body.name(), generateLinkToVerifyEmail(token));
+      //emailService.sendEmail(body.email(), body.name(), generateLinkToVerifyEmail(token));
     }
     return result;
   }
 
   protected String generateLinkToVerifyEmail(String token){
-    return this.apiUrl + token;
+    return this.apiUrl + "/verify-email/" + token;
   }
 
-  public String login(LoginDTO body) {
-    boolean isLoginAllow = userService.login(body);
-    if(!isLoginAllow){
-      throw new RuntimeException("Email or password is INCORRECT.");
-    }
-    return tokenService.generateToken(body.email());
+  public ResponseLoginDTO login(LoginDTO request) {
+    boolean authrization = userService.login(request);
+    if(!authrization) return null;
+
+    String accessToken = tokenService.generateToken(request.email());
+    String refreshToken = tokenService.generateToken(request.email());
+
+    return new ResponseLoginDTO(accessToken, refreshToken);
   }
 
-  public Boolean verifyEmailToken(String token) {
+  public boolean verifyEmailToken(String token) {
      return userService.verifyEmailToken(token);
   }
 }

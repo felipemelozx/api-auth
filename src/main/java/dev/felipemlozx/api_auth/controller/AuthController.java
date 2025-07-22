@@ -27,8 +27,8 @@ public class AuthController {
       var fails = authService.register(body);
       if (fails.isEmpty()){
         return ResponseEntity
-            .status(HttpStatus.CREATED).
-            body(ApiResponse
+            .status(HttpStatus.CREATED)
+            .body(ApiResponse
                 .success("User registered.", List.of("Verification email sent.")));
       }
     return ResponseEntity.badRequest().body(ApiResponse.error(fails));
@@ -36,15 +36,19 @@ public class AuthController {
 
   @PostMapping("/login")
   public ResponseEntity<ApiResponse<ResponseLoginDTO>> login(@RequestBody LoginDTO body){
-    String token = authService.login(body);
-    ResponseLoginDTO response = new ResponseLoginDTO(body.email(), token);
-    ApiResponse<ResponseLoginDTO> apiResponse = ApiResponse.success("User logged in successfully", response);
-    return ResponseEntity.ok().body(apiResponse);
+    ResponseLoginDTO response = authService.login(body);
+    if(response != null ){
+      ApiResponse<ResponseLoginDTO> apiResponse = ApiResponse.success("User logged in successfully", response);
+      return ResponseEntity.ok().body(apiResponse);
+    } else {
+      ApiResponse<ResponseLoginDTO> apiResponse = ApiResponse.error("User or password is Incorrect", null);
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(apiResponse);
+    }
   }
 
-  @GetMapping("/verifyEmail/{id}")
+  @GetMapping("/verify-email/{id}")
   public ResponseEntity<ApiResponse<String>> verifyEmail(@PathVariable(name = "id") String token){
-    Boolean isValid = authService.verifyEmailToken(token);
+    boolean isValid = authService.verifyEmailToken(token);
     if(!isValid) return ResponseEntity.badRequest().body(ApiResponse.error("Link invalid."));
     return ResponseEntity.ok().build();
   }

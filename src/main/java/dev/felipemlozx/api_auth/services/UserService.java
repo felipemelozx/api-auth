@@ -58,6 +58,7 @@ public class UserService {
       user.setPassword(passwordEncoder.encode(userDto.password()));
       userRepository.save(user);
     }
+    createEmailVerificationToken(userDto.email());
     return errors;
   }
 
