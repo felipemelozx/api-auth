@@ -32,7 +32,7 @@ public class AuthService {
     List<String> result = userService.register(body);
     if(result.isEmpty()){
       String token = userService.createEmailVerificationToken(body.email());
-      //emailService.sendEmail(body.email(), body.name(), generateLinkToVerifyEmail(token));
+      emailService.sendEmail(body.email(), body.name(), generateLinkToVerifyEmail(token));
     }
     return result;
   }
@@ -42,8 +42,8 @@ public class AuthService {
   }
 
   public ResponseLoginDTO login(LoginDTO request) {
-    boolean authrization = userService.login(request);
-    if(!authrization) return null;
+    boolean authorization = userService.login(request);
+    if(!authorization) return null;
 
     String accessToken = tokenService.generateToken(request.email());
     String refreshToken = tokenService.generateToken(request.email());

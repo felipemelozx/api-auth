@@ -2,6 +2,7 @@ package dev.felipemlozx.api_auth.services;
 
 import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
 import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
+import dev.felipemlozx.api_auth.controller.dto.ResponseLoginDTO;
 import dev.felipemlozx.api_auth.infra.security.TokenService;
 import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,13 +10,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.security.authentication.AuthenticationManager;
 
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,13 +71,14 @@ class AuthServiceTest {
   void shouldReturnToken_whenLoginIsSuccessful() {
     LoginDTO loginDTO = new LoginDTO("test@gmail.com", "Password123!");
     String token = UUID.randomUUID().toString();
+    ResponseLoginDTO mock = new ResponseLoginDTO(token, token);
 
     when(userService.login(loginDTO)).thenReturn(true);
     when(tokenService.generateToken(loginDTO.email())).thenReturn(token);
 
-    String result = authService.login(loginDTO);
+    ResponseLoginDTO result = authService.login(loginDTO);
     verify(userService).login(loginDTO);
-    assertEquals(token, result);
+    assertEquals(mock, result);
   }
 
   @Test
@@ -85,9 +87,8 @@ class AuthServiceTest {
 
     when(userService.login(loginDTO)).thenReturn(false);
 
-    RuntimeException ex = assertThrows(RuntimeException.class, () -> authService.login(loginDTO));
+    assertNull(authService.login(loginDTO));
     verify(userService).login(loginDTO);
-    assertEquals("Email or password is INCORRECT.", ex.getMessage());
   }
 
   @Test
