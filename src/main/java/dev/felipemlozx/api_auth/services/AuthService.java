@@ -2,6 +2,7 @@ package dev.felipemlozx.api_auth.services;
 
 import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
 import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
+import dev.felipemlozx.api_auth.controller.dto.ResponseLoginDTO;
 import dev.felipemlozx.api_auth.infra.security.TokenService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,18 +36,20 @@ public class AuthService {
   }
 
   protected String generateLinkToVerifyEmail(String token){
-    return this.apiUrl + token;
+    return this.apiUrl + "/verify-email/" + token;
   }
 
-  public String login(LoginDTO body) {
-    boolean isLoginAllow = userService.login(body);
-    if(!isLoginAllow){
-      throw new RuntimeException("Email or password is INCORRECT.");
-    }
-    return tokenService.generateToken(body.email());
+  public ResponseLoginDTO login(LoginDTO request) {
+    boolean authorization = userService.login(request);
+    if(!authorization) return null;
+
+    String accessToken = tokenService.generateToken(request.email());
+    String refreshToken = tokenService.generateToken(request.email());
+
+    return new ResponseLoginDTO(accessToken, refreshToken);
   }
 
-  public Boolean verifyEmailToken(String token) {
+  public boolean verifyEmailToken(String token) {
      return userService.verifyEmailToken(token);
   }
 }
