@@ -45,8 +45,7 @@ class AuthControllerTest {
 
     assertEquals(HttpStatus.CREATED, result.getStatusCode());
     assertTrue(result.getBody().isSuccess());
-    assertEquals("User registered.", result.getBody().getMessage());
-    assertEquals("Verification email sent.", result.getBody().getData().get(0));
+    assertEquals("User created. Verify your email.", result.getBody().getMessage());
   }
 
   @Test

@@ -2,7 +2,6 @@ package dev.felipemlozx.api_auth.services;
 
 import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
 import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
-import dev.felipemlozx.api_auth.controller.dto.ResponseLoginDTO;
 import dev.felipemlozx.api_auth.core.AuthCheckFailure;
 import dev.felipemlozx.api_auth.core.AuthCheckResult;
 import dev.felipemlozx.api_auth.core.AuthCheckSuccess;
@@ -49,8 +48,8 @@ public class AuthService {
 
   public LoginResult login(LoginDTO request) {
     AuthCheckResult checkResult = userService.login(request);
-    if(checkResult instanceof AuthCheckFailure failure) {
-      return new LoginFailure(failure.error());
+    if(checkResult instanceof AuthCheckFailure(var error)) {
+      return new LoginFailure(error);
     }
 
     var success = (AuthCheckSuccess) checkResult;

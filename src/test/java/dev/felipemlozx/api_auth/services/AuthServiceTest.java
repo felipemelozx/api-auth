@@ -3,6 +3,13 @@ package dev.felipemlozx.api_auth.services;
 import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
 import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
 import dev.felipemlozx.api_auth.controller.dto.ResponseLoginDTO;
+import dev.felipemlozx.api_auth.core.AuthCheckFailure;
+import dev.felipemlozx.api_auth.core.AuthCheckSuccess;
+import dev.felipemlozx.api_auth.core.AuthError;
+import dev.felipemlozx.api_auth.core.LoginFailure;
+import dev.felipemlozx.api_auth.core.LoginResult;
+import dev.felipemlozx.api_auth.core.LoginSuccess;
+import dev.felipemlozx.api_auth.entity.User;
 import dev.felipemlozx.api_auth.infra.security.TokenService;
 import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,9 +24,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
@@ -71,23 +76,25 @@ class AuthServiceTest {
   void shouldReturnToken_whenLoginIsSuccessful() {
     LoginDTO loginDTO = new LoginDTO("test@gmail.com", "Password123!");
     String token = UUID.randomUUID().toString();
-    ResponseLoginDTO mock = new ResponseLoginDTO(token, token);
-
-    when(userService.login(loginDTO)).thenReturn(true);
+    LoginSuccess mock = new LoginSuccess(token, token);
+    User user = new User("test", "test@gmail.com", "Password123!", true);
+    when(userService.login(loginDTO)).thenReturn(new AuthCheckSuccess(user));
     when(tokenService.generateToken(loginDTO.email())).thenReturn(token);
 
-    ResponseLoginDTO result = authService.login(loginDTO);
+    LoginResult result = authService.login(loginDTO);
     verify(userService).login(loginDTO);
     assertEquals(mock, result);
   }
 
   @Test
-  void shouldThrowException_whenLoginCredentialsAreInvalid() {
+  void shouldReturnNull_whenLoginCredentialsAreInvalid() {
     LoginDTO loginDTO = new LoginDTO("test@gmail.com", "Password123!");
+    AuthCheckFailure error = new AuthCheckFailure(AuthError.INVALID_CREDENTIALS);
+    when(userService.login(loginDTO)).thenReturn(error);
 
-    when(userService.login(loginDTO)).thenReturn(false);
+    LoginFailure response = (LoginFailure) authService.login(loginDTO);
 
-    assertNull(authService.login(loginDTO));
+    assertTrue(response.error().equals(error.error()));
     verify(userService).login(loginDTO);
   }
 
