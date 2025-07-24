@@ -3,6 +3,12 @@ package dev.felipemlozx.api_auth.services;
 import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
 import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
 import dev.felipemlozx.api_auth.controller.dto.ResponseLoginDTO;
+import dev.felipemlozx.api_auth.core.AuthCheckFailure;
+import dev.felipemlozx.api_auth.core.AuthCheckResult;
+import dev.felipemlozx.api_auth.core.AuthCheckSuccess;
+import dev.felipemlozx.api_auth.core.LoginFailure;
+import dev.felipemlozx.api_auth.core.LoginResult;
+import dev.felipemlozx.api_auth.core.LoginSuccess;
 import dev.felipemlozx.api_auth.infra.security.TokenService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,7 +36,9 @@ public class AuthService {
     List<String> result = userService.register(body);
     if(result.isEmpty()){
       String token = userService.createEmailVerificationToken(body.email());
-      emailService.sendEmail(body.email(), body.name(), generateLinkToVerifyEmail(token));
+      if(token != null ) {
+        emailService.sendEmail(body.email(), body.name(), generateLinkToVerifyEmail(token));
+      }
     }
     return result;
   }
@@ -39,14 +47,19 @@ public class AuthService {
     return this.apiUrl + "/verify-email/" + token;
   }
 
-  public ResponseLoginDTO login(LoginDTO request) {
-    boolean authorization = userService.login(request);
-    if(!authorization) return null;
+  public LoginResult login(LoginDTO request) {
+    AuthCheckResult checkResult = userService.login(request);
+    if(checkResult instanceof AuthCheckFailure failure) {
+      return new LoginFailure(failure.error());
+    }
 
-    String accessToken = tokenService.generateToken(request.email());
-    String refreshToken = tokenService.generateToken(request.email());
+    var success = (AuthCheckSuccess) checkResult;
+    var user = success.user();
 
-    return new ResponseLoginDTO(accessToken, refreshToken);
+    String accessToken = tokenService.generateToken(user.getEmail());
+    String refreshToken = tokenService.generateToken(user.getEmail());
+
+    return new LoginSuccess(accessToken, refreshToken);
   }
 
   public boolean verifyEmailToken(String token) {
