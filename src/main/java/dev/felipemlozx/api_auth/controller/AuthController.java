@@ -55,7 +55,7 @@ public class AuthController {
           .body(ApiResponse.error("Email not verified", null));
     }
     if(loginFailure.error().equals(AuthError.INVALID_CREDENTIALS)){
-      ResponseEntity.status(HttpStatus.FORBIDDEN)
+      return ResponseEntity.status(HttpStatus.FORBIDDEN)
           .body(ApiResponse.error("User or password is incorrect", null));
     }
 
