@@ -1,6 +1,12 @@
 package dev.felipemlozx.api_auth.controller;
 
 import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
+import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
+import dev.felipemlozx.api_auth.controller.dto.ResponseLoginDTO;
+import dev.felipemlozx.api_auth.core.AuthError;
+import dev.felipemlozx.api_auth.core.LoginFailure;
+import dev.felipemlozx.api_auth.core.LoginResult;
+import dev.felipemlozx.api_auth.core.LoginSuccess;
 import dev.felipemlozx.api_auth.services.AuthService;
 import dev.felipemlozx.api_auth.utils.ApiResponse;
 import jakarta.mail.MessagingException;
@@ -18,6 +24,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -61,4 +68,81 @@ class AuthControllerTest {
     assertEquals(fails, result.getBody().getData());
   }
 
+  @Test
+  void shouldReturnSussedWhenLoginIsAccepted() {
+    LoginDTO request = new LoginDTO("test@gmail.com", "Test#1");
+    LoginResult responseAuth = new LoginSuccess("accessToken", "refreshToken");
+    ResponseLoginDTO responseLoginDTO = new ResponseLoginDTO("accessToken", "refreshToken");
+    when(authService.login(request)).thenReturn(responseAuth);
+
+    ResponseEntity<ApiResponse<ResponseLoginDTO>> response = authController.login(request);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(responseLoginDTO, response.getBody().getData());
+    assertTrue(response.getBody().isSuccess());
+    assertEquals("Success", response.getBody().getMessage());
+  }
+
+  @Test
+  void shouldReturnFailsEmailNotVerifyWhenLoginIsAccepted() {
+    LoginDTO request = new LoginDTO("test@gmail.com", "Test#1");
+    LoginResult responseAuth = new LoginFailure(AuthError.EMAIL_NOT_VERIFIED);
+    when(authService.login(request)).thenReturn(responseAuth);
+
+    ResponseEntity<ApiResponse<ResponseLoginDTO>> response = authController.login(request);
+
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertEquals("Email not verified", response.getBody().getMessage());
+    assertNull(response.getBody().getData());
+  }
+
+  @Test
+  void shouldReturnFailsInvalidCredentialsWhenLoginIsAccepted() {
+    LoginDTO request = new LoginDTO("test@gmail.com", "Test#1");
+    LoginResult responseAuth = new LoginFailure(AuthError.INVALID_CREDENTIALS);
+    when(authService.login(request)).thenReturn(responseAuth);
+
+    ResponseEntity<ApiResponse<ResponseLoginDTO>> response = authController.login(request);
+
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertEquals("User or password is incorrect", response.getBody().getMessage());
+    assertNull(response.getBody().getData());
+  }
+
+  @Test
+  void shouldReturnFailsUserNotRegisterWhenLoginIsAccepted() {
+    LoginDTO request = new LoginDTO("test@gmail.com", "Test#1");
+    LoginResult responseAuth = new LoginFailure(AuthError.USER_NOT_REGISTER);
+    when(authService.login(request)).thenReturn(responseAuth);
+
+    ResponseEntity<ApiResponse<ResponseLoginDTO>> response = authController.login(request);
+
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertEquals("User not register.", response.getBody().getMessage());
+    assertNull(response.getBody().getData());
+  }
+
+  @Test
+  void shouldReturnSussedWhenEmailIsVerified() {
+    String token = "fake-token";
+    boolean responseAuth = true;
+
+    when(authService.verifyEmailToken(token)).thenReturn(responseAuth);
+
+    ResponseEntity<ApiResponse<Void>> response = authController.verifyEmail(token);
+    assertEquals("Email verified", response.getBody().getMessage());
+    assertNull(response.getBody().getData());
+  }
+
+  @Test
+  void shouldReturnFailsWhenTokenIsExpired() {
+    String token = "fake-token";
+    boolean responseAuth = false;
+
+    when(authService.verifyEmailToken(token)).thenReturn(responseAuth);
+
+    ResponseEntity<ApiResponse<Void>> response = authController.verifyEmail(token);
+    assertEquals("Invalid or expired token", response.getBody().getMessage());
+    assertNull(response.getBody().getData());
+  }
 }
