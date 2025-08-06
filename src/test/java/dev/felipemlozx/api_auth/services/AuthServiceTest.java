@@ -2,7 +2,6 @@ package dev.felipemlozx.api_auth.services;
 
 import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
 import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
-import dev.felipemlozx.api_auth.controller.dto.ResponseLoginDTO;
 import dev.felipemlozx.api_auth.core.AuthCheckFailure;
 import dev.felipemlozx.api_auth.core.AuthCheckSuccess;
 import dev.felipemlozx.api_auth.core.AuthError;
@@ -17,22 +16,23 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
+import org.mockito.Spy;
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AuthServiceTest {
 
   @InjectMocks
+  @Spy
   private AuthService authService;
 
   @Mock
@@ -122,8 +122,22 @@ class AuthServiceTest {
     List<String> result = authService.register(createUserDto);
 
     verify(userService).register(createUserDto);
-    verify(userService, org.mockito.Mockito.never()).createEmailVerificationToken(anyString());
-    verify(emailService, org.mockito.Mockito.never()).sendEmail(anyString(), anyString(), anyString());
+    verify(userService, never()).createEmailVerificationToken(anyString());
+    verify(emailService, never()).sendEmail(anyString(), anyString(), anyString());
     assertEquals(errors, result);
+  }
+
+  @Test
+  void shouldNotSedEmailWhenTokenIsInValid() throws MessagingException {
+    CreateUserDto createUserDto = new CreateUserDto("name", "test@gmail.com", "Password123!");
+
+    when(userService.register(createUserDto)).thenReturn(List.of());
+    when(userService.createEmailVerificationToken(createUserDto.email())).thenReturn(null);
+
+    List<String> result = authService.register(createUserDto);
+
+    verify(userService).register(createUserDto);
+    verify(userService).createEmailVerificationToken(createUserDto.email());
+    verify(emailService, never()).sendEmail(anyString(), anyString(), anyString());
   }
 }
