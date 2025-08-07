@@ -2,6 +2,10 @@ package dev.felipemlozx.api_auth.services;
 
 import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
 import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
+import dev.felipemlozx.api_auth.core.AuthCheckFailure;
+import dev.felipemlozx.api_auth.core.AuthCheckResult;
+import dev.felipemlozx.api_auth.core.AuthCheckSuccess;
+import dev.felipemlozx.api_auth.core.AuthError;
 import dev.felipemlozx.api_auth.entity.User;
 import dev.felipemlozx.api_auth.repository.UserRepository;
 import dev.felipemlozx.api_auth.utils.CheckUtils;
@@ -24,13 +28,13 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -99,44 +103,44 @@ class UserServiceTest {
   }
 
   @Test
+  void shouldThrowsErrorWhenUserIsNotFound() {
+    LoginDTO loginDTO = new LoginDTO("test@test.com", "Password!32");
+    when(userRepository.findByEmail(loginDTO.email())).thenReturn(Optional.empty());
+    AuthCheckResult result = userService.login(loginDTO);
+    assertInstanceOf(AuthCheckFailure.class, result);
+    assertEquals(AuthError.USER_NOT_REGISTER, ((AuthCheckFailure) result).error());
+  }
+
+  @Test
   void shouldThrowsErrorWhenEmailIsNotVerify() {
     LoginDTO loginDTO = new LoginDTO("test@test.com", "Password!32");
     User user = new User("test", "test@test.com","Password!32", false);
     when(userRepository.findByEmail(loginDTO.email())).thenReturn(Optional.of(user));
-
-    RuntimeException ex = assertThrows(RuntimeException.class,
-        () -> userService.login(loginDTO));
-    assertEquals("Email not verify", ex.getMessage());
+    AuthCheckResult result = userService.login(loginDTO);
+    assertInstanceOf(AuthCheckFailure.class, result);
+    assertEquals(AuthError.EMAIL_NOT_VERIFIED, ((AuthCheckFailure) result).error());
   }
 
   @Test
-  void shouldThrowsErrorWhenUserIsNotFound() {
-    LoginDTO loginDTO = new LoginDTO("test@test.com", "Password!32");
-    when(userRepository.findByEmail(loginDTO.email())).thenReturn(Optional.empty());
-
-    RuntimeException ex = assertThrows(RuntimeException.class,
-        () -> userService.login(loginDTO));
-    assertEquals("User not found.", ex.getMessage());
-  }
-
-  @Test
-  void shouldReturnTrueWhenPasswordIsEquals() {
+  void shouldReturnSuccessWhenPasswordIsEquals() {
     LoginDTO loginDTO = new LoginDTO("test@test.com", "Password!32");
     User user = new User("test", "test@test.com","Password!32", true);
     when(userRepository.findByEmail(loginDTO.email())).thenReturn(Optional.of(user));
     when(passwordEncoder.matches(loginDTO.password(), user.getPassword())).thenReturn(true);
-    boolean result = userService.login(loginDTO);
-    assertTrue(result);
+    AuthCheckResult result = userService.login(loginDTO);
+    assertInstanceOf(AuthCheckSuccess.class, result);
+    assertEquals(user, ((AuthCheckSuccess) result).user());
   }
 
   @Test
-  void shouldReturnFalseWhenPasswordIsEquals() {
+  void shouldReturnFailureWhenPasswordIsIncorrect() {
     LoginDTO loginDTO = new LoginDTO("test@test.com", "Password!32");
     User user = new User("test", "test@test.com","Password32", true);
     when(userRepository.findByEmail(loginDTO.email())).thenReturn(Optional.of(user));
     when(passwordEncoder.matches(loginDTO.password(), user.getPassword())).thenReturn(false);
-    boolean result = userService.login(loginDTO);
-    assertFalse(result);
+    AuthCheckResult result = userService.login(loginDTO);
+    assertInstanceOf(AuthCheckFailure.class, result);
+    assertEquals(AuthError.INVALID_CREDENTIALS, ((AuthCheckFailure) result).error());
   }
 
   @Test
@@ -214,16 +218,24 @@ class UserServiceTest {
   }
 
   @Test
-  void shouldThrowRuntimeException_whenEmailTokenUserNotFound() {
+  void shouldReturnNull_whenCreatingEmailVerificationTokenForNonexistentUser() {
+    String email = "teste@gmail.com";
+    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+    String result = userService.createEmailVerificationToken(email);
+    verify(userRepository).findByEmail(email);
+    assertNull(result);
+  }
+
+  @Test
+  void shouldReturnFalse_whenEmailTokenUserNotFound() {
     String token = "fake-token123";
     String email = "teste@gmail.com";
     when(cacheManager.getCache("EmailVerificationTokens")).thenReturn(cache);
     when(cache.get(token)).thenReturn(valueWrapper);
     when(valueWrapper.get()).thenReturn(email);
     when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
-
-    RuntimeException ex = assertThrows(RuntimeException.class, () -> userService.verifyEmailToken(token));
-    assertEquals("Link invalid.", ex.getMessage());
+    Boolean result = userService.verifyEmailToken(token);
+    assertFalse(result);
   }
 
   @Test
@@ -238,15 +250,6 @@ class UserServiceTest {
     assertNotNull(result);
   }
 
-  @Test
-  void shouldThrowRuntimeException_whenCreatingEmailVerificationTokenForNonexistentUser() {
-    String email = "teste@gmail.com";
-    when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
-
-    RuntimeException result = assertThrows(RuntimeException.class, () -> userService.createEmailVerificationToken(email));
-    verify(userRepository).findByEmail(email);
-    assertEquals("User not found.", result.getMessage());
-  }
 
   @Test
   void shouldSaveTokenInCache_whenCacheIsAvailable() {
@@ -294,7 +297,7 @@ class UserServiceTest {
     when(cache.get(token)).thenReturn(valueWrapper);
     when(valueWrapper.get()).thenReturn(email);
 
-    String result = userService.recuperarToken(token);
+    String result = userService.recoverToken(token);
 
     assertEquals(email, result);
   }
@@ -302,9 +305,7 @@ class UserServiceTest {
   @Test
   void shouldReturnNull_whenCacheIsNullOnTokenRetrieval() {
     when(cacheManager.getCache("EmailVerificationTokens")).thenReturn(null);
-
-    String result = userService.recuperarToken("any-token");
-
+    String result = userService.recoverToken("any-token");
     assertNull(result);
   }
 
@@ -313,10 +314,19 @@ class UserServiceTest {
     when(cacheManager.getCache("EmailVerificationTokens")).thenReturn(cache);
     when(cache.get("token-inexistente")).thenReturn(null);
 
-    String result = userService.recuperarToken("token-inexistente");
-
+    String result = userService.recoverToken("token-inexistente");
     assertNull(result);
   }
+
+  @Test
+  void shouldReturnFalse_whenRecoverTokenReturnsNull() {
+    String token = "invalid-token";
+    when(cacheManager.getCache("EmailVerificationTokens")).thenReturn(cache);
+    when(cache.get(token)).thenReturn(null);
+    Boolean result = userService.verifyEmailToken(token);
+    assertFalse(result);
+  }
+
   private void mockUserTime(User user) {
     user.setTimeVerify(
         Instant
