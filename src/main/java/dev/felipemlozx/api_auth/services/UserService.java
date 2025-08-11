@@ -35,8 +35,11 @@ public class UserService {
   }
 
   @Transactional
-  public List<String> register(CreateUserDto userDto){
+  public List<String> register(CreateUserDto userDto) {
     List<String> errors = CheckUtils.validatePasswordAndEmail(userDto.password(), userDto.email());
+
+    boolean userExist = userRepository.existsByEmail(userDto.email());
+    if(userExist) errors.add("Email already exists");
 
     if (errors.isEmpty()) {
       User user = new User();
