@@ -3,6 +3,10 @@ package dev.felipemlozx.api_auth.controller;
 import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
 import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
 import dev.felipemlozx.api_auth.controller.dto.ResponseLoginDTO;
+import dev.felipemlozx.api_auth.core.AuthError;
+import dev.felipemlozx.api_auth.core.LoginFailure;
+import dev.felipemlozx.api_auth.core.LoginResult;
+import dev.felipemlozx.api_auth.core.LoginSuccess;
 import dev.felipemlozx.api_auth.services.AuthService;
 import dev.felipemlozx.api_auth.utils.ApiResponse;
 import jakarta.mail.MessagingException;
@@ -24,32 +28,48 @@ public class AuthController {
 
   @PostMapping("/register")
   public ResponseEntity<ApiResponse<List<String>>> register(@RequestBody CreateUserDto body) throws MessagingException {
-      var fails = authService.register(body);
-      if (fails.isEmpty()){
+      List<String> response = authService.register(body);
+      if (response.isEmpty()){
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .body(ApiResponse
-                .success("User registered.", List.of("Verification email sent.")));
+                .success("User created. Verify your email.", null));
       }
-    return ResponseEntity.badRequest().body(ApiResponse.error(fails));
+      return ResponseEntity.badRequest()
+          .body(ApiResponse.error("Validation errors", response));
   }
 
   @PostMapping("/login")
   public ResponseEntity<ApiResponse<ResponseLoginDTO>> login(@RequestBody LoginDTO body){
-    ResponseLoginDTO response = authService.login(body);
-    if(response != null ){
-      ApiResponse<ResponseLoginDTO> apiResponse = ApiResponse.success("User logged in successfully", response);
-      return ResponseEntity.ok().body(apiResponse);
-    } else {
-      ApiResponse<ResponseLoginDTO> apiResponse = ApiResponse.error("User or password is Incorrect", null);
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(apiResponse);
+    LoginResult result = authService.login(body);
+
+    if(result instanceof LoginSuccess(var accessToken, var refreshToken)) {
+      ResponseLoginDTO response = new ResponseLoginDTO(accessToken, refreshToken);
+      return ResponseEntity.ok().body(ApiResponse.success(response));
     }
+
+    LoginFailure loginFailure = (LoginFailure) result;
+
+    if(loginFailure.error().equals(AuthError.EMAIL_NOT_VERIFIED)){
+      return ResponseEntity.status(HttpStatus.FORBIDDEN)
+          .body(ApiResponse.error("Email not verified", null));
+    }
+    if(loginFailure.error().equals(AuthError.INVALID_CREDENTIALS)){
+      return ResponseEntity.status(HttpStatus.FORBIDDEN)
+          .body(ApiResponse.error("User or password is incorrect", null));
+    }
+
+    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+        .body(ApiResponse.error("User not register.", null));
   }
 
-  @GetMapping("/verify-email/{id}")
-  public ResponseEntity<ApiResponse<String>> verifyEmail(@PathVariable(name = "id") String token){
+  @GetMapping("/verify-email/{token}")
+  public ResponseEntity<ApiResponse<Void>> verifyEmail(@PathVariable String token){
     boolean isValid = authService.verifyEmailToken(token);
-    if(!isValid) return ResponseEntity.badRequest().body(ApiResponse.error("Link invalid."));
-    return ResponseEntity.ok().build();
+    if (isValid) {
+      return ResponseEntity.ok(ApiResponse.success("Email verified", null));
+    }
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(ApiResponse.error("Invalid or expired token", null));
   }
 }

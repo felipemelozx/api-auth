@@ -2,6 +2,10 @@ package dev.felipemlozx.api_auth.services;
 
 import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
 import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
+import dev.felipemlozx.api_auth.core.AuthCheckFailure;
+import dev.felipemlozx.api_auth.core.AuthCheckResult;
+import dev.felipemlozx.api_auth.core.AuthCheckSuccess;
+import dev.felipemlozx.api_auth.core.AuthError;
 import dev.felipemlozx.api_auth.entity.User;
 import dev.felipemlozx.api_auth.repository.UserRepository;
 import dev.felipemlozx.api_auth.utils.CheckUtils;
@@ -14,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -29,27 +34,12 @@ public class UserService {
     this.cacheManager = cacheManager;
   }
 
-  public void saveToken(String token, String email) {
-    Cache cache = cacheManager.getCache("EmailVerificationTokens");
-    if (cache != null) {
-      cache.put(token, email);
-    }
-  }
-
-  public String recuperarToken(String token) {
-    Cache cache = cacheManager.getCache("EmailVerificationTokens");
-    if (cache != null) {
-      Cache.ValueWrapper wrapper = cache.get(token);
-      if (wrapper != null) {
-        return (String) wrapper.get();
-      }
-    }
-    return null;
-  }
-
   @Transactional
-  public List<String> register(CreateUserDto userDto){
+  public List<String> register(CreateUserDto userDto) {
     List<String> errors = CheckUtils.validatePasswordAndEmail(userDto.password(), userDto.email());
+
+    boolean userExist = userRepository.existsByEmail(userDto.email());
+    if(userExist) errors.add("Email already exists");
 
     if (errors.isEmpty()) {
       User user = new User();
@@ -61,34 +51,45 @@ public class UserService {
     return errors;
   }
 
-  public Boolean login(LoginDTO userLogin) {
-    User user = userRepository.findByEmail(userLogin.email())
-        .orElseThrow(() -> new RuntimeException("User not found."));
+  public AuthCheckResult login(LoginDTO userLogin) {
+    Optional<User> maybeUser = userRepository.findByEmail(userLogin.email());
 
-    if(!user.isVerified()){
-      throw new RuntimeException("Email not verify");
+    if(maybeUser.isEmpty()) return new AuthCheckFailure(AuthError.USER_NOT_REGISTER);
+    User user = maybeUser.get();
+
+    if(!user.isVerified()) return new AuthCheckFailure(AuthError.EMAIL_NOT_VERIFIED);
+
+    boolean matches = passwordEncoder.matches(userLogin.password(), user.getPassword());
+
+    if (!matches) {
+      return new AuthCheckFailure(AuthError.INVALID_CREDENTIALS);
     }
 
-    return passwordEncoder.matches(userLogin.password(), user.getPassword());
+    return new AuthCheckSuccess(user);
   }
 
   public String createEmailVerificationToken(String email) {
-    userRepository.findByEmail(email)
-        .orElseThrow(() -> new RuntimeException("User not found."));
+    Optional<User> maybeUser = userRepository.findByEmail(email);
+    if(maybeUser.isEmpty()) return null;
+
     UUID token = UUID.randomUUID();
     saveToken(token.toString(), email);
     return token.toString();
   }
 
   public Boolean verifyEmailToken(String token) {
-    String email = recuperarToken(token);
-    User user = userRepository.findByEmail(email)
-        .orElseThrow(() -> new RuntimeException("Link invalid."));
+    String email = recoverToken(token);
+    if(email == null) return false;
+
+    Optional<User> maybeUser = userRepository.findByEmail(email);
+    if(maybeUser.isEmpty()) return false;
+    User user = maybeUser.get();
 
     boolean isValid = Instant.now().isBefore(user.getTimeVerify());
     if(!isValid){
       return false;
     }
+
     user.setVerified(true);
     userRepository.save(user);
     return true;
@@ -98,16 +99,27 @@ public class UserService {
   @Scheduled(fixedRate = 1800000)
   public void deleteUserNotVerify() {
     List<User> userList = userRepository.findByVerifiedIsFalse();
+    Instant now = Instant.now();
     for(User user : userList){
-      boolean isValid = Instant.now().isBefore(user.getTimeVerify());
-      if(!isValid){
-        userRepository.delete(user);
-      }
+      boolean isValid = now.isBefore(user.getTimeVerify());
+      if(!isValid) userRepository.delete(user);
     }
   }
 
   public User findById(Long id){
     return userRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("User not found."));
+  }
+
+  public void saveToken(String token, String email) {
+    Cache cache = cacheManager.getCache("EmailVerificationTokens");
+    if (cache != null) cache.put(token, email);
+  }
+
+  public String recoverToken(String token) {
+    Cache cache = cacheManager.getCache("EmailVerificationTokens");
+    if (cache == null) return null;
+    Cache.ValueWrapper wrapper = cache.get(token);
+    return wrapper != null ? (String) wrapper.get() : null;
   }
 }
