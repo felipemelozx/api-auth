@@ -83,7 +83,6 @@ class AuthControllerIntegrationTest {
 
 
     User user = userRepository.findByEmail(dto.email()).orElseThrow();
-    // Validar dados no banco
     assert user.getEmail().equals(dto.email());
     assert !user.isVerified();
     assert user.getName().equals(dto.name());
@@ -95,7 +94,6 @@ class AuthControllerIntegrationTest {
   @DisplayName("Register fails with existing email")
   void shouldReturnBadRequestWhenRegisterFails() throws Exception {
 
-    // Primeiro cria usuário com esse email
     User existingUser = new User();
     existingUser.setName("test");
     existingUser.setEmail("test@gmail.com");
@@ -119,7 +117,6 @@ class AuthControllerIntegrationTest {
   @DisplayName("Login success returns tokens")
   void shouldReturnSuccessWhenLoginIsAccepted() throws Exception {
 
-    // Cria usuário para login
     String rawPassword = "Test#1";
     User user = new User();
     user.setName("test");
