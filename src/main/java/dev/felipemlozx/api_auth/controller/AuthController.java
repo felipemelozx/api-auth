@@ -1,12 +1,12 @@
 package dev.felipemlozx.api_auth.controller;
 
-import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
-import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
-import dev.felipemlozx.api_auth.controller.dto.ResponseLoginDTO;
 import dev.felipemlozx.api_auth.core.AuthError;
 import dev.felipemlozx.api_auth.core.LoginFailure;
 import dev.felipemlozx.api_auth.core.LoginResult;
 import dev.felipemlozx.api_auth.core.LoginSuccess;
+import dev.felipemlozx.api_auth.dto.CreateUserDto;
+import dev.felipemlozx.api_auth.dto.LoginDTO;
+import dev.felipemlozx.api_auth.dto.ResponseLoginDTO;
 import dev.felipemlozx.api_auth.services.AuthService;
 import dev.felipemlozx.api_auth.utils.ApiResponse;
 import jakarta.mail.MessagingException;

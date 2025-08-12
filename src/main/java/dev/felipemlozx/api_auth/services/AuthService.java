@@ -1,13 +1,13 @@
 package dev.felipemlozx.api_auth.services;
 
-import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
-import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
 import dev.felipemlozx.api_auth.core.AuthCheckFailure;
 import dev.felipemlozx.api_auth.core.AuthCheckResult;
 import dev.felipemlozx.api_auth.core.AuthCheckSuccess;
 import dev.felipemlozx.api_auth.core.LoginFailure;
 import dev.felipemlozx.api_auth.core.LoginResult;
 import dev.felipemlozx.api_auth.core.LoginSuccess;
+import dev.felipemlozx.api_auth.dto.CreateUserDto;
+import dev.felipemlozx.api_auth.dto.LoginDTO;
 import dev.felipemlozx.api_auth.infra.security.TokenService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Value;

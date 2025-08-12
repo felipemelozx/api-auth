@@ -2,8 +2,8 @@ package dev.felipemlozx.api_auth.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.felipemlozx.api_auth.config.EmbeddedRedisConfig;
-import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
-import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
+import dev.felipemlozx.api_auth.dto.CreateUserDto;
+import dev.felipemlozx.api_auth.dto.LoginDTO;
 import dev.felipemlozx.api_auth.entity.User;
 import dev.felipemlozx.api_auth.repository.UserRepository;
 import dev.felipemlozx.api_auth.services.EmailService;
