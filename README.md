@@ -1,30 +1,68 @@
 ## API de Autenticação
+Esta é uma API de autenticação de usuários desenvolvida em Java com Spring Boot, que utiliza tokens JWT para segurança. A API permite a criação de contas e login, além de realizar a verificação de e-mail por meio da geração de tokens aleatórios usando UUID. Para o envio de e-mails, a aplicação integra o serviço do Gmail utilizando o `spring-boot-starter-mail`. 
 
-This is a user authentication API.
+Além disso, os tokens de verificação são armazenados no Redis junto com o e-mail do usuário para garantir validade e facilitar a validação durante o processo de confirmação.
+
+---
 
 ## Technology
 
-Here are the technologies used in this project:
+<div>
+  <img src="https://skillicons.dev/icons?i=java" height="40" alt="java logo"/>
+  <img src="https://skillicons.dev/icons?i=mysql" height="40" alt="mysql logo"/>
+  <img src="https://skillicons.dev/icons?i=spring" height="40" alt="spring logo"/>
+  <img src="https://skillicons.dev/icons?i=hibernate" height="40" alt="hibernate logo"/>
+  <img src="https://skillicons.dev/icons?i=redis" height="40" alt="redis logo"/>
+  <img src="https://skillicons.dev/icons?i=githubactions" height="40" alt="github actions logo"/>
+  <img src="https://skillicons.dev/icons?i=docker" height="40" alt="docker logo"/>
+</div>
 
-* Java version 21.0.0
-* Spring Boot 3.3.1
-* MySQL
-* Docker
+---
 
-## Services Used
+### Dependências
 
-* GitHub
+| Dependência                          | Descrição                                  | Escopo    |
+|-------------------------------------|--------------------------------------------|-----------|
+| Spring Boot Starter Data JPA        | Persistência de dados com JPA/Hibernate    | (padrão)  |
+| Spring Boot Starter Web             | Framework web para APIs RESTful            | (padrão)  |
+| Spring Boot Starter Mail            | Suporte a envio de e-mails                 | (padrão)  |
+| Spring Boot Starter Thymeleaf       | Template engine para views HTML            | (padrão)  |
+| Java JWT (Auth0) 4.4.0              | Geração e validação de JSON Web Tokens     | (padrão)  |
+| Spring Boot Starter Security        | Segurança autenticação e autorização       | (padrão)  |
+| Spring Boot Starter Data Redis      | Integração com Redis para cache/mensagens  | (padrão)  |
+| MySQL Connector/J                   | Driver JDBC para MySQL                     | runtime   |
+| H2 Database                         | Banco em memória para testes               | test      |
+| embedded-redis 0.7.3                | Redis embarcado para testes                | test      |
+| Spring Boot Starter Test            | Framework de teste do Spring Boot          | test      |
+| Spring Security Test                | Testes de segurança                        | test      |
 
-## Dependencies
+---
+## Estrutura de Pastas
 
-* Spring Boot Starters
-  - spring-boot-starter-data-jpa
-  - spring-boot-starter-web
-  - spring-boot-starter-security
-  - spring-boot-starter-test (scope test)
-* MySQL Connector
-* java-jwt (version 4.4.0)
-* spring-security-test (scope test)
+```plaintext
+.github/
+├── workflows/
+│     └── java-ci.yml              # Workflow para build e test da aplicação
+│
+src/
+├── main/
+│   ├── java/
+│   │   └── dev/felipemelozx/api_auth/
+│   │        ├── controller/       # Endpoints da API (REST Controllers)
+│   │        ├── dto/              # Objetos de transferência de dados (Request/Response)
+│   │        ├── entity/           # Entidades JPA (Mapeadas para o banco de dados)
+│   │        ├── repository/       # Interfaces de acesso ao banco (JPA)
+│   │        ├── infra/            # Configuração de segurança (Autenticação JWT)
+│   │               └── config/    # Configuração de dependências gerais ou de dependências externas. (Redis, CROS)
+│   │               └── security/  #Configuração de segurança da aplicação (filtro de request, jwt, etc)
+│   │        └── service/          # Regras de negócio e lógica da aplicação
+│   │        └── utils/            # classes utilitárias
+│   └── resources/
+│       └── application.yaml       # Configurações (Porta, banco, JWT, etc)
+│       └── templates/             # Templates para o envio de email
+```
+
+---
 
 ## Getting Started
 
