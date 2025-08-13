@@ -21,20 +21,20 @@ Além disso, os tokens de verificação são armazenados no Redis junto com o e-
 
 ### Dependências
 
-| Dependência                          | Descrição                                  | Escopo    |
-|-------------------------------------|--------------------------------------------|-----------|
-| Spring Boot Starter Data JPA        | Persistência de dados com JPA/Hibernate    | (padrão)  |
-| Spring Boot Starter Web             | Framework web para APIs RESTful            | (padrão)  |
-| Spring Boot Starter Mail            | Suporte a envio de e-mails                 | (padrão)  |
-| Spring Boot Starter Thymeleaf       | Template engine para views HTML            | (padrão)  |
-| Java JWT (Auth0) 4.4.0              | Geração e validação de JSON Web Tokens     | (padrão)  |
-| Spring Boot Starter Security        | Segurança autenticação e autorização       | (padrão)  |
-| Spring Boot Starter Data Redis      | Integração com Redis para cache/mensagens  | (padrão)  |
-| MySQL Connector/J                   | Driver JDBC para MySQL                     | runtime   |
-| H2 Database                         | Banco em memória para testes               | test      |
-| embedded-redis 0.7.3                | Redis embarcado para testes                | test      |
-| Spring Boot Starter Test            | Framework de teste do Spring Boot          | test      |
-| Spring Security Test                | Testes de segurança                        | test      |
+| Dependência                    | Descrição                                 | Escopo   |
+|--------------------------------|-------------------------------------------|----------|
+| Spring Boot Starter Data JPA   | Persistência de dados com JPA/Hibernate   | (padrão) |
+| Spring Boot Starter Web        | Framework web para APIs RESTful           | (padrão) |
+| Spring Boot Starter Mail       | Suporte a envio de e-mails                | (padrão) |
+| Spring Boot Starter Thymeleaf  | Template engine para views HTML           | (padrão) |
+| Java JWT (Auth0) 4.4.0         | Geração e validação de JSON Web Tokens    | (padrão) |
+| Spring Boot Starter Security   | Segurança autenticação e autorização      | (padrão) |
+| Spring Boot Starter Data Redis | Integração com Redis para cache/mensagens | (padrão) |
+| MySQL Connector/J              | Driver JDBC para MySQL                    | runtime  |
+| H2 Database                    | Banco em memória para testes              | test     |
+| embedded-redis 0.7.3           | Redis embarcado para testes               | test     |
+| Spring Boot Starter Test       | Framework de teste do Spring Boot         | test     |
+| Spring Security Test           | Testes de segurança                       | test     |
 
 ---
 ## Estrutura de Pastas
@@ -63,6 +63,30 @@ src/
 ```
 
 ---
+## Endpoints
+
+| Método | Rota                    | Descrição                                                   | Autenticação |
+|--------|-------------------------|-------------------------------------------------------------|--------------|
+| POST   | `/api/v1/auth/register` | Cadastra um novo usuário                                    | ❌            |
+| POST   | `/api/v1/auth/login`    | Autentica usuário e retorna JWT                             | ❌            |
+| GET    | `/api/v1/club/secret`   | Rota protegida so para user logados e com e-mail verificado | ✅            |
+
+
+## Fluxo de Autenticação
+1. Cadastro: `/api/v1/auth/register` cria o usuário.
+
+2. Verificar e-mail:`/api/v1/auth/verify-email{token}` verifica o e-mail com o `token` enviado para o e-mail cadastrado.
+
+3. Login: `/api/v1/auth/login` retorna Access + Refresh Tokens.
+
+4. Acesso protegido: Endpoints de `/api/v1/club/secret` exigem Access Token no header Authorization: Bearer <token>.
+
+5. Renovação: `/auth/v1/refresh` gera novo Access `Token`.
+
+6. Logout: Invalida Refresh Token.
+
+
+
 
 ## Getting Started
 
