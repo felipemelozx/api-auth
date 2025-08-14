@@ -79,7 +79,7 @@ class AuthServiceTest {
     LoginSuccess mock = new LoginSuccess(token, token);
     User user = new User("test", "test@gmail.com", "Password123!", true);
     when(userService.login(loginDTO)).thenReturn(new AuthCheckSuccess(user));
-    when(tokenService.generateToken(loginDTO.email())).thenReturn(token);
+    when(tokenService.generateToken(loginDTO.email(), null)).thenReturn(token);
 
     LoginResult result = authService.login(loginDTO);
     verify(userService).login(loginDTO);

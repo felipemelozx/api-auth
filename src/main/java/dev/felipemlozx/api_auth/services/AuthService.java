@@ -55,8 +55,8 @@ public class AuthService {
     var success = (AuthCheckSuccess) checkResult;
     var user = success.user();
 
-    String accessToken = tokenService.generateToken(user.getEmail());
-    String refreshToken = tokenService.generateToken(user.getEmail());
+    String accessToken = tokenService.generateToken(user.getEmail(), null);
+    String refreshToken = tokenService.generateToken(user.getEmail(), null);
 
     return new LoginSuccess(accessToken, refreshToken);
   }
