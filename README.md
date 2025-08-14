@@ -49,11 +49,12 @@ src/
 │   ├── java/
 │   │   └── dev/felipemelozx/api_auth/
 │   │        ├── controller/       # Endpoints da API (REST Controllers)
+│   │        ├── core/             # class para transição de dados entre módulos
 │   │        ├── dto/              # Objetos de transferência de dados (Request/Response)
 │   │        ├── entity/           # Entidades JPA (Mapeadas para o banco de dados)
 │   │        ├── repository/       # Interfaces de acesso ao banco (JPA)
 │   │        ├── infra/            # Configuração de segurança (Autenticação JWT)
-│   │               └── config/    # Configuração de dependências gerais ou de dependências externas. (Redis, CROS)
+│   │               └── config/    # Configuração de dependências gerais ou de dependências externas. (Redis, CORS)
 │   │               └── security/  #Configuração de segurança da aplicação (filtro de request, jwt, etc)
 │   │        └── service/          # Regras de negócio e lógica da aplicação
 │   │        └── utils/            # classes utilitárias
@@ -73,19 +74,133 @@ src/
 
 
 ## Fluxo de Autenticação
-1. Cadastro: `/api/v1/auth/register` cria o usuário.
+1. Cadastro: `/auth/register` cria o usuário.
 
-2. Verificar e-mail:`/api/v1/auth/verify-email{token}` verifica o e-mail com o `token` enviado para o e-mail cadastrado.
+2. Verificar e-mail: `/auth/verify-email/{token}` verifica o e-mail com o `token` enviado para o e-mail cadastrado.
 
-3. Login: `/api/v1/auth/login` retorna Access + Refresh Tokens.
+3. Login: `/auth/login` retorna Access + Refresh Tokens.
 
-4. Acesso protegido: Endpoints de `/api/v1/club/secret` exigem Access Token no header Authorization: Bearer <token>.
+4. Acesso protegido: Endpoints protegidos exigem Access Token no header Authorization: Bearer <token>.
 
-5. Renovação: `/auth/v1/refresh` gera novo Access `Token`.
+## Exemplos de Requisição
 
-6. Logout: Invalida Refresh Token.
+#### Registro
+```http
+POST /auth/register
+Content-Type: application/json
+{
+  "username": "UserNameTest",
+  "email": "Test@email.com",
+  "password": "Strong#123"
+}
+```
+##### Resposta
 
+```http
+HTTP/1.1 201 Created
+Content-Type: application/json
 
+{
+  "success": true,
+  "message": "User created. Verify your email.",
+  "data": null
+}
+```
+
+**Resposta com erros de validação:**
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{
+  "success": false,
+  "message": "Validation errors",
+  "data": [
+    "Username must be at least 3 characters long",
+    "Email must be valid",
+    "Password must contain at least 8 characters, one uppercase, one lowercase, one number and one special character"
+  ]
+}
+```
+
+#### Login
+```http
+POST /auth/login
+Content-Type: application/json
+
+{
+  "username": "UserNameTest",
+  "password": "Strong#123"
+}
+```
+
+**Resposta de sucesso:**
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "success": true,
+  "message": "Success",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+**Resposta com erro - Email não verificado:**
+```http
+HTTP/1.1 403 Forbidden
+Content-Type: application/json
+
+{
+  "success": false,
+  "message": "Email not verified",
+  "data": null
+}
+```
+
+**Resposta com erro - Credenciais inválidas:**
+```http
+HTTP/1.1 403 Forbidden
+Content-Type: application/json
+
+{
+  "success": false,
+  "message": "User or password is incorrect",
+  "data": null
+}
+```
+
+#### Verificação de Email
+```http
+GET /auth/verify-email/{token}
+```
+
+**Resposta de sucesso:**
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "success": true,
+  "message": "Email verified",
+  "data": null
+}
+```
+
+**Resposta com erro - Token inválido/expirado:**
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{
+  "success": false,
+  "message": "Invalid or expired token",
+  "data": null
+}
+```
 
 
 ## Getting Started
