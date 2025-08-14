@@ -4,9 +4,11 @@ import java.util.List;
 import java.util.Random;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import dev.felipemlozx.api_auth.dto.UserJwtDTO;
 import dev.felipemlozx.api_auth.utils.ApiResponse;
 
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RestController
 @RequestMapping("club/secret")
 public class ClubController {
+  private Random random = new Random();
+
   private List<String> phrasesList = List.of(
     "Acredite no seu potencial e svá além.",
     "Cada desafio é uma oportunidade de crescimento.",
@@ -26,12 +30,13 @@ public class ClubController {
     "Não espere por oportunidades, crie-as.",
     "Seu único limite é você mesmo."
 );
-  public ClubController() {}
+
 
   @GetMapping
   public ResponseEntity<ApiResponse<String>> getPhrases(){
-    int index = new Random().nextInt(phrasesList.size());
+    int index = random.nextInt(phrasesList.size());
     String mensagem = phrasesList.get(index);
-    return ResponseEntity.ok().body(ApiResponse.success("You are authorization",mensagem));
+    UserJwtDTO user = (UserJwtDTO) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    return ResponseEntity.ok().body(ApiResponse.success(user.name() + " are authorization" , user.email() + " " + mensagem));
   }
 }

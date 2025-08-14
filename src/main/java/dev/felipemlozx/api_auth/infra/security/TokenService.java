@@ -6,6 +6,8 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
+import dev.felipemlozx.api_auth.dto.UserJwtDTO;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -21,14 +23,16 @@ public class TokenService {
   private String secret;
 
 
-  public String generateToken(String email, List<String> roles) {
+  public String generateToken(UserJwtDTO userJwtDTO) {
     try {
         Algorithm algorithm = Algorithm.HMAC256(secret);
-
+        
         return JWT.create()
                 .withIssuer("API-AUTH")
-                .withSubject(email)
-                .withClaim("roles", roles != null && !roles.isEmpty() ? roles : List.of("USER"))
+                .withClaim("id",userJwtDTO.id())
+                .withClaim("name",userJwtDTO.name())
+                .withClaim("email",userJwtDTO.email())
+                .withClaim("roles", List.of("USER_ROLE"))
                 .withIssuedAt(new Date())
                 .withExpiresAt(getExpires())
                 .sign(algorithm);

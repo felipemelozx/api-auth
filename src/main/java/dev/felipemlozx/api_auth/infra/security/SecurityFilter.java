@@ -1,8 +1,6 @@
 package dev.felipemlozx.api_auth.infra.security;
 
-
-import dev.felipemlozx.api_auth.entity.User;
-import dev.felipemlozx.api_auth.repository.UserRepository;
+import dev.felipemlozx.api_auth.dto.UserJwtDTO;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,8 +21,6 @@ public class SecurityFilter extends OncePerRequestFilter {
 
   @Autowired
   TokenService tokenService;
-  @Autowired
-  UserRepository userRepository;
 
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -32,15 +28,17 @@ public class SecurityFilter extends OncePerRequestFilter {
     var decodedJWT = tokenService.validateToken(token);
 
     if(decodedJWT != null){
-      String email = decodedJWT.getSubject();
+      String email = decodedJWT.getClaim("email").asString();
+      String name = decodedJWT.getClaim("name").asString();
+      Long id = decodedJWT.getClaim("id").asLong();
       List<String> roles = decodedJWT.getClaim("roles").asList(String.class);
-
-    var authorities = roles.stream()
+      UserJwtDTO userJwtDTO = new UserJwtDTO(id, name, email);
+      var authorities = roles.stream()
             .map(SimpleGrantedAuthority::new)
             .toList();
 
-    var authentication = new UsernamePasswordAuthenticationToken(email,null, authorities);
-    SecurityContextHolder.getContext().setAuthentication(authentication);
+      var authentication = new UsernamePasswordAuthenticationToken(userJwtDTO,null, authorities);
+      SecurityContextHolder.getContext().setAuthentication(authentication);
     }
     filterChain.doFilter(request, response);
   }

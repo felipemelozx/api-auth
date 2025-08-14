@@ -4,7 +4,7 @@ import dev.felipemlozx.api_auth.core.AuthError;
 import dev.felipemlozx.api_auth.core.LoginFailure;
 import dev.felipemlozx.api_auth.core.LoginResult;
 import dev.felipemlozx.api_auth.core.LoginSuccess;
-import dev.felipemlozx.api_auth.dto.CreateUserDto;
+import dev.felipemlozx.api_auth.dto.CreateUserDTO;
 import dev.felipemlozx.api_auth.dto.LoginDTO;
 import dev.felipemlozx.api_auth.dto.ResponseLoginDTO;
 import dev.felipemlozx.api_auth.services.AuthService;
@@ -27,7 +27,7 @@ public class AuthController {
   }
 
   @PostMapping("/register")
-  public ResponseEntity<ApiResponse<List<String>>> register(@RequestBody CreateUserDto body) throws MessagingException {
+  public ResponseEntity<ApiResponse<List<String>>> register(@RequestBody CreateUserDTO body) throws MessagingException {
       List<String> response = authService.register(body);
       if (response.isEmpty()){
         return ResponseEntity

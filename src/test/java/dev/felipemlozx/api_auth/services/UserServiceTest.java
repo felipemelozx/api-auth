@@ -4,7 +4,7 @@ import dev.felipemlozx.api_auth.core.AuthCheckFailure;
 import dev.felipemlozx.api_auth.core.AuthCheckResult;
 import dev.felipemlozx.api_auth.core.AuthCheckSuccess;
 import dev.felipemlozx.api_auth.core.AuthError;
-import dev.felipemlozx.api_auth.dto.CreateUserDto;
+import dev.felipemlozx.api_auth.dto.CreateUserDTO;
 import dev.felipemlozx.api_auth.dto.LoginDTO;
 import dev.felipemlozx.api_auth.entity.User;
 import dev.felipemlozx.api_auth.repository.UserRepository;
@@ -66,7 +66,7 @@ class UserServiceTest {
 
   @Test
   void shouldRegisterUserWhenNoErrors() {
-    CreateUserDto dto = new CreateUserDto("Felipe", "felipe@email.com", "Secure123");
+    CreateUserDTO dto = new CreateUserDTO("Felipe", "felipe@email.com", "Secure123");
     String encodedPassword = "encoded_pass";
 
     try (MockedStatic<CheckUtils> utils = Mockito.mockStatic(CheckUtils.class)) {
@@ -88,7 +88,7 @@ class UserServiceTest {
 
   @Test
   void shouldReturnErrorsWhenValidationFails() {
-    CreateUserDto dto = new CreateUserDto("Felipe", "invalid_email", "123");
+    CreateUserDTO dto = new CreateUserDTO("Felipe", "invalid_email", "123");
     List<String> errors = List.of("Invalid email", "Weak password");
 
     try (MockedStatic<CheckUtils> utils = Mockito.mockStatic(CheckUtils.class)) {
