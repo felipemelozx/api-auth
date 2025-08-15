@@ -14,7 +14,7 @@ import dev.felipemlozx.api_auth.utils.ApiResponse;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @RestController
-@RequestMapping("club/secret")
+@RequestMapping("/club/secret")
 public class ClubController {
   private Random random = new Random();
 

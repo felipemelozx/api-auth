@@ -44,4 +44,4 @@ api:
   secret:
     key: secrete
 
-API_URL: http://localhost:4200/veryfi-email/
+API_URL: http://localhost:4200/verify-email/
