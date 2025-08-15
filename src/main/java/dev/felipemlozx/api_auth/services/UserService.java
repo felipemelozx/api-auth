@@ -1,11 +1,11 @@
 package dev.felipemlozx.api_auth.services;
 
-import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
-import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
 import dev.felipemlozx.api_auth.core.AuthCheckFailure;
 import dev.felipemlozx.api_auth.core.AuthCheckResult;
 import dev.felipemlozx.api_auth.core.AuthCheckSuccess;
 import dev.felipemlozx.api_auth.core.AuthError;
+import dev.felipemlozx.api_auth.dto.CreateUserDTO;
+import dev.felipemlozx.api_auth.dto.LoginDTO;
 import dev.felipemlozx.api_auth.entity.User;
 import dev.felipemlozx.api_auth.repository.UserRepository;
 import dev.felipemlozx.api_auth.utils.CheckUtils;
@@ -35,7 +35,7 @@ public class UserService {
   }
 
   @Transactional
-  public List<String> register(CreateUserDto userDto) {
+  public List<String> register(CreateUserDTO userDto) {
     List<String> errors = CheckUtils.validatePasswordAndEmail(userDto.password(), userDto.email());
 
     boolean userExist = userRepository.existsByEmail(userDto.email());

@@ -2,8 +2,8 @@ package dev.felipemlozx.api_auth.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.felipemlozx.api_auth.config.EmbeddedRedisConfig;
-import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
-import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
+import dev.felipemlozx.api_auth.dto.CreateUserDTO;
+import dev.felipemlozx.api_auth.dto.LoginDTO;
 import dev.felipemlozx.api_auth.entity.User;
 import dev.felipemlozx.api_auth.repository.UserRepository;
 import dev.felipemlozx.api_auth.services.EmailService;
@@ -69,7 +69,7 @@ class AuthControllerIntegrationTest {
   @Test
   @DisplayName("Register user successfully")
   void shouldRegisterUserAndReturnSuccessResponse() throws Exception {
-    CreateUserDto dto = new CreateUserDto("test", "test@gmail.com", "Password!1");
+    CreateUserDTO dto = new CreateUserDTO("test", "test@gmail.com", "Password!1");
 
     mockMvc.perform(MockMvcRequestBuilders.post("/auth/register")
           .characterEncoding("UTF-8")
@@ -101,7 +101,7 @@ class AuthControllerIntegrationTest {
     existingUser.setVerified(false);
     userRepository.save(existingUser);
 
-    CreateUserDto dto = new CreateUserDto(existingUser.getName(), existingUser.getEmail(), existingUser.getPassword());
+    CreateUserDTO dto = new CreateUserDTO(existingUser.getName(), existingUser.getEmail(), existingUser.getPassword());
 
     mockMvc.perform(MockMvcRequestBuilders.post("/auth/register")
             .characterEncoding("UTF-8")

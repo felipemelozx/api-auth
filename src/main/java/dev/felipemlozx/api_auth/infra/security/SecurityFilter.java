@@ -1,12 +1,11 @@
 package dev.felipemlozx.api_auth.infra.security;
 
-
-import dev.felipemlozx.api_auth.entity.User;
-import dev.felipemlozx.api_auth.repository.UserRepository;
+import dev.felipemlozx.api_auth.dto.UserJwtDTO;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -15,25 +14,30 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.List;
 
 @Component
 public class SecurityFilter extends OncePerRequestFilter {
 
   @Autowired
   TokenService tokenService;
-  @Autowired
-  UserRepository userRepository;
 
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
     var token = this.recoverToken(request);
-    var login = tokenService.validateToken(token);
+    var decodedJWT = tokenService.validateToken(token);
 
-    if(login != null){
-      User user = userRepository.findByEmail(login).orElseThrow(() -> new RuntimeException("User Not Found"));
-      var authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
-      var authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
+    if(decodedJWT != null){
+      String email = decodedJWT.getClaim("email").asString();
+      String name = decodedJWT.getClaim("name").asString();
+      Long id = decodedJWT.getClaim("id").asLong();
+      List<String> roles = decodedJWT.getClaim("roles").asList(String.class);
+      UserJwtDTO userJwtDTO = new UserJwtDTO(id, name, email);
+      var authorities = roles.stream()
+            .map(SimpleGrantedAuthority::new)
+            .toList();
+
+      var authentication = new UsernamePasswordAuthenticationToken(userJwtDTO,null, authorities);
       SecurityContextHolder.getContext().setAuthentication(authentication);
     }
     filterChain.doFilter(request, response);

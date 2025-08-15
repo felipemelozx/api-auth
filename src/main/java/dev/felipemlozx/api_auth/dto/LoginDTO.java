@@ -1,4 +1,4 @@
-package dev.felipemlozx.api_auth.controller.dto;
+package dev.felipemlozx.api_auth.dto;
 
 public record LoginDTO (String email,
                         String password) {

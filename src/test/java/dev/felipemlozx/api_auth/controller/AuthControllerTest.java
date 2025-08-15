@@ -1,12 +1,12 @@
 package dev.felipemlozx.api_auth.controller;
 
-import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
-import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
-import dev.felipemlozx.api_auth.controller.dto.ResponseLoginDTO;
 import dev.felipemlozx.api_auth.core.AuthError;
 import dev.felipemlozx.api_auth.core.LoginFailure;
 import dev.felipemlozx.api_auth.core.LoginResult;
 import dev.felipemlozx.api_auth.core.LoginSuccess;
+import dev.felipemlozx.api_auth.dto.CreateUserDTO;
+import dev.felipemlozx.api_auth.dto.LoginDTO;
+import dev.felipemlozx.api_auth.dto.ResponseLoginDTO;
 import dev.felipemlozx.api_auth.services.AuthService;
 import dev.felipemlozx.api_auth.utils.ApiResponse;
 import jakarta.mail.MessagingException;
@@ -44,7 +44,7 @@ class AuthControllerTest {
   @Test
   void shouldRegisterUserAndReturnSuccessResponse() throws MessagingException {
     List<String> userList = new ArrayList<>();
-    CreateUserDto body = new CreateUserDto("test", "test@gmail.com", "Password!1");
+    CreateUserDTO body = new CreateUserDTO("test", "test@gmail.com", "Password!1");
     when(authService.register(body)).thenReturn(userList);
 
     ResponseEntity<ApiResponse<List<String>>> result = authController.register(body);
@@ -58,7 +58,7 @@ class AuthControllerTest {
   @Test
   void shouldReturnBadRequestWhenRegisterFails() throws MessagingException {
     List<String> fails = List.of("Email already exists");
-    CreateUserDto body = new CreateUserDto("test", "test@gmail.com", "Password!1");
+    CreateUserDTO body = new CreateUserDTO("test", "test@gmail.com", "Password!1");
     when(authService.register(body)).thenReturn(fails);
 
     ResponseEntity<ApiResponse<List<String>>> result = authController.register(body);

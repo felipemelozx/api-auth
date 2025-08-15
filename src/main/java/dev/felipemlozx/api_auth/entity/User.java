@@ -15,7 +15,7 @@ public class User {
   @Column(unique = true)
   private String email;
   private String password;
-  @Column(name = "timeVerify", updatable = false)
+  @Column(name = "time_verify", updatable = false)
   private Instant timeVerify;
   private boolean verified;
 

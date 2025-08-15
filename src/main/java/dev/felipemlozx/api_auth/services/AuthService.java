@@ -1,13 +1,14 @@
 package dev.felipemlozx.api_auth.services;
 
-import dev.felipemlozx.api_auth.controller.dto.CreateUserDto;
-import dev.felipemlozx.api_auth.controller.dto.LoginDTO;
 import dev.felipemlozx.api_auth.core.AuthCheckFailure;
 import dev.felipemlozx.api_auth.core.AuthCheckResult;
 import dev.felipemlozx.api_auth.core.AuthCheckSuccess;
 import dev.felipemlozx.api_auth.core.LoginFailure;
 import dev.felipemlozx.api_auth.core.LoginResult;
 import dev.felipemlozx.api_auth.core.LoginSuccess;
+import dev.felipemlozx.api_auth.dto.CreateUserDTO;
+import dev.felipemlozx.api_auth.dto.LoginDTO;
+import dev.felipemlozx.api_auth.dto.UserJwtDTO;
 import dev.felipemlozx.api_auth.infra.security.TokenService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,7 +32,7 @@ public class AuthService {
     this.tokenService = tokenService;
   }
 
-  public List<String> register(CreateUserDto body) throws MessagingException {
+  public List<String> register(CreateUserDTO body) throws MessagingException {
     List<String> result = userService.register(body);
     if(result.isEmpty()){
       String token = userService.createEmailVerificationToken(body.email());
@@ -54,14 +55,14 @@ public class AuthService {
 
     var success = (AuthCheckSuccess) checkResult;
     var user = success.user();
-
-    String accessToken = tokenService.generateToken(user.getEmail());
-    String refreshToken = tokenService.generateToken(user.getEmail());
+    UserJwtDTO userJwtDTO = new UserJwtDTO(user.getId(), user.getName(), user.getEmail());
+    String accessToken = tokenService.generateToken(userJwtDTO);
+    String refreshToken = tokenService.generateToken(userJwtDTO);
 
     return new LoginSuccess(accessToken, refreshToken);
   }
 
   public boolean verifyEmailToken(String token) {
-     return userService.verifyEmailToken(token);
+    return userService.verifyEmailToken(token);
   }
 }
