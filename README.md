@@ -91,11 +91,11 @@ Esta seção te guiará passo a passo para configurar e executar a API de autent
 
 Antes de começar, certifique-se de ter instalado:
 
-- **Java 21** - [Download oficial](https://adoptium.net/)
+- **Java 21** - [Download oficial](https://www.oracle.com/br/java/technologies/downloads/)
 - **Maven 3.6+** - [Download oficial](https://maven.apache.org/download.cgi)
-- **MySQL 8.0+** - [Download oficial](https://dev.mysql.com/downloads/)
+- **MySQL 8.0+** - [Download oficial](https://www.mysql.com/downloads/)
 - **Redis 6.0+** - [Download oficial](https://redis.io/download)
-- **Git** - [Download oficial](https://git-scm.com/)
+- **Git** - [Download oficial](https://git-scm.com/downloads)
 
 > **Dica**: Se preferir usar Docker, você pode executar MySQL e Redis em containers. Veja a seção [Executando com Docker](#executando-com-docker) abaixo.
 
@@ -392,9 +392,7 @@ The main features of the application are:
  - JWT token-based authentication
  - Email verification system
  - Redis-based token storage
- - Protected routes with role-based access
- - Comprehensive validation and error handling
-
+   
 ## Links
 
 - Repository: https://github.com/felipemelozx/api-auth
@@ -405,6 +403,6 @@ The main features of the application are:
 
 ## Authors
 
-* **Felipe**
+* **[Felipe Melo](https://github.com/felipemelozx)**
 
 Please follow GitHub and join us! Thanks for visiting and happy coding!
