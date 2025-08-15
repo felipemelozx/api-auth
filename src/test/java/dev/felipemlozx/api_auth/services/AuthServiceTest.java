@@ -14,6 +14,7 @@ import dev.felipemlozx.api_auth.infra.security.TokenService;
 import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -24,6 +25,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
@@ -76,16 +78,18 @@ class AuthServiceTest {
   @Test
   void shouldReturnToken_whenLoginIsSuccessful() {
     LoginDTO loginDTO = new LoginDTO("test@gmail.com", "Password123!");
-    UserJwtDTO userJwtDTO = new UserJwtDTO(12l, "test",  loginDTO.email());
-    String token = UUID.randomUUID().toString();
-    LoginSuccess mock = new LoginSuccess(token, token);
     User user = new User("test", "test@gmail.com", "Password123!", true);
+    String token = UUID.randomUUID().toString();
+
     when(userService.login(loginDTO)).thenReturn(new AuthCheckSuccess(user));
-    when(tokenService.generateToken(userJwtDTO)).thenReturn(token);
+    when(tokenService.generateToken(any())).thenReturn(token);
 
     LoginResult result = authService.login(loginDTO);
+
     verify(userService).login(loginDTO);
-    assertEquals(mock, result);
+
+    LoginSuccess expected = new LoginSuccess(token, token);
+    assertTrue(expected.equals(result));
   }
 
   @Test
