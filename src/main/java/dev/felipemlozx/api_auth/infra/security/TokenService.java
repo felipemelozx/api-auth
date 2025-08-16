@@ -6,8 +6,7 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
-import dev.felipemlozx.api_auth.dto.UserJwtDTO;
-
+import dev.felipemlozx.api_auth.entity.User;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -24,15 +23,15 @@ public class TokenService {
   private static final String ISSUER = "API-auth";
 
 
-  public String generateToken(UserJwtDTO userJwtDTO) {
+  public String generateToken(User user) {
     try {
         Algorithm algorithm = Algorithm.HMAC256(secret);
         
         return JWT.create()
                 .withIssuer(ISSUER)
-                .withClaim("id",userJwtDTO.id())
-                .withClaim("name",userJwtDTO.name())
-                .withClaim("email",userJwtDTO.email())
+                .withClaim("id", user.getId())
+                .withClaim("name", user.getName())
+                .withClaim("email", user.getEmail())
                 .withClaim("roles", List.of("USER_ROLE"))
                 .withIssuedAt(new Date())
                 .withExpiresAt(getExpires())
@@ -43,13 +42,13 @@ public class TokenService {
     }
   }
 
-  public String generateRefreshToken(UserJwtDTO userJwtDTO) {
+  public String generateRefreshToken(User user) {
     try {
       Algorithm algorithm = Algorithm.HMAC256(secret);
 
       return JWT.create()
           .withIssuer(ISSUER)
-          .withClaim("id", userJwtDTO.id())
+          .withClaim("id", user.getId())
           .withIssuedAt(new Date())
           .withExpiresAt(getRefreshExpires())
           .sign(algorithm);

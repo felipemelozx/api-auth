@@ -43,7 +43,7 @@ public class AuthController {
   public ResponseEntity<ApiResponse<ResponseLoginDTO>> login(@RequestBody LoginDTO body){
     LoginResult result = authService.login(body);
 
-    if(result instanceof LoginSuccess(var accessToken, var refreshToken)) {
+    if(result instanceof LoginSuccess(String accessToken, String refreshToken)) {
       ResponseLoginDTO response = new ResponseLoginDTO(accessToken, refreshToken);
       return ResponseEntity.ok().body(ApiResponse.success(response));
     }
@@ -71,5 +71,16 @@ public class AuthController {
     }
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .body(ApiResponse.error("Invalid or expired token", null));
+  }
+
+  @GetMapping("/refresh")
+  public ResponseEntity<ApiResponse<ResponseLoginDTO>> refreshAccessToken(@RequestHeader("X-Refresh-Token") String refreshToken  ){
+      LoginResult res = authService.verifyToken(refreshToken);
+      if(res instanceof LoginSuccess(String accessToken, String token)){
+        return ResponseEntity.ok().body(ApiResponse.success(new ResponseLoginDTO(accessToken, token)));
+      }
+
+      LoginFailure failure = (LoginFailure) res;
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(failure.error().toString()));
   }
 }
