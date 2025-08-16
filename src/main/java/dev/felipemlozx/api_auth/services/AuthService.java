@@ -57,7 +57,7 @@ public class AuthService {
     var user = success.user();
     UserJwtDTO userJwtDTO = new UserJwtDTO(user.getId(), user.getName(), user.getEmail());
     String accessToken = tokenService.generateToken(userJwtDTO);
-    String refreshToken = tokenService.generateToken(userJwtDTO);
+    String refreshToken = tokenService.generateRefreshToken(userJwtDTO);
 
     return new LoginSuccess(accessToken, refreshToken);
   }

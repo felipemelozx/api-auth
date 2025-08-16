@@ -21,6 +21,7 @@ import java.util.List;
 public class TokenService {
   @Value("${api.secret.key}")
   private String secret;
+  private static final String ISSUER = "API-auth";
 
 
   public String generateToken(UserJwtDTO userJwtDTO) {
@@ -28,7 +29,7 @@ public class TokenService {
         Algorithm algorithm = Algorithm.HMAC256(secret);
         
         return JWT.create()
-                .withIssuer("API-AUTH")
+                .withIssuer(ISSUER)
                 .withClaim("id",userJwtDTO.id())
                 .withClaim("name",userJwtDTO.name())
                 .withClaim("email",userJwtDTO.email())
@@ -40,14 +41,30 @@ public class TokenService {
     } catch (JWTCreationException e) {
         throw new IllegalStateException("Error while generating token", e);
     }
-}
+  }
+
+  public String generateRefreshToken(UserJwtDTO userJwtDTO) {
+    try {
+      Algorithm algorithm = Algorithm.HMAC256(secret);
+
+      return JWT.create()
+          .withIssuer(ISSUER)
+          .withClaim("id", userJwtDTO.id())
+          .withIssuedAt(new Date())
+          .withExpiresAt(getRefreshExpires())
+          .sign(algorithm);
+
+    } catch (JWTCreationException e) {
+      throw new IllegalStateException("Error while generating refresh token", e);
+    }
+  }
 
   public DecodedJWT validateToken(String token) {
     try {
         Algorithm algorithm = Algorithm.HMAC256(secret);
 
         return JWT.require(algorithm)
-                .withIssuer("API-AUTH")
+                .withIssuer(ISSUER)
                 .build()
                 .verify(token);
 
@@ -57,6 +74,10 @@ public class TokenService {
 }
 
   private Instant getExpires() {
-    return LocalDateTime.now().plusHours(3).toInstant(ZoneOffset.ofHours(-3));
+    return LocalDateTime.now().plusHours(1).toInstant(ZoneOffset.ofHours(-3));
+  }
+
+  private Instant getRefreshExpires() {
+    return LocalDateTime.now().plusDays(7).toInstant(ZoneOffset.ofHours(-3));
   }
 }
