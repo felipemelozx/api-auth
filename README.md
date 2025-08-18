@@ -1,11 +1,12 @@
-## API de Autenticação
-Esta é uma API de autenticação de usuários desenvolvida em Java com Spring Boot, que utiliza tokens JWT para segurança. A API permite a criação de contas e login, além de realizar a verificação de e-mail por meio da geração de tokens aleatórios usando UUID. Para o envio de e-mails, a aplicação integra o serviço do Gmail utilizando o `spring-boot-starter-mail`. 
+# API de Autenticação
+
+Esta é uma API de autenticação de usuários desenvolvida em Java com Spring Boot 3.3.1, que utiliza tokens JWT para segurança. A API permite a criação de contas e login, além de realizar a verificação de e-mail por meio da geração de tokens aleatórios usando UUID. Para o envio de e-mails, a aplicação integra o serviço do Gmail utilizando o `spring-boot-starter-mail`.
 
 Além disso, os tokens de verificação são armazenados no Redis junto com o e-mail do usuário para garantir validade e facilitar a validação durante o processo de confirmação.
 
 ---
 
-## Technology
+## Tecnologias
 
 <div>
   <img src="https://skillicons.dev/icons?i=java" height="40" alt="java logo"/>
@@ -21,20 +22,26 @@ Além disso, os tokens de verificação são armazenados no Redis junto com o e-
 
 ### Dependências
 
-| Dependência                    | Descrição                                 | Escopo   |
-|--------------------------------|-------------------------------------------|----------|
-| Spring Boot Starter Data JPA   | Persistência de dados com JPA/Hibernate   | (padrão) |
-| Spring Boot Starter Web        | Framework web para APIs RESTful           | (padrão) |
-| Spring Boot Starter Mail       | Suporte a envio de e-mails                | (padrão) |
-| Spring Boot Starter Thymeleaf  | Template engine para views HTML           | (padrão) |
-| Java JWT (Auth0) 4.4.0         | Geração e validação de JSON Web Tokens    | (padrão) |
-| Spring Boot Starter Security   | Segurança autenticação e autorização      | (padrão) |
-| Spring Boot Starter Data Redis | Integração com Redis para cache/mensagens | (padrão) |
-| MySQL Connector/J              | Driver JDBC para MySQL                    | runtime  |
-| H2 Database                    | Banco em memória para testes              | test     |
-| embedded-redis 0.7.3           | Redis embarcado para testes               | test     |
-| Spring Boot Starter Test       | Framework de teste do Spring Boot         | test     |
-| Spring Security Test           | Testes de segurança                       | test     |
+| Dependência                    | Versão | Descrição                                 | Escopo   |
+|--------------------------------|--------|-------------------------------------------|----------|
+| Spring Boot Starter Data JPA   | 3.3.1  | Persistência de dados com JPA/Hibernate   | (padrão) |
+| Spring Boot Starter Web        | 3.3.1  | Framework web para APIs RESTful           | (padrão) |
+| Spring Boot Starter Mail       | 3.3.1  | Suporte a envio de e-mails                | (padrão) |
+| Spring Boot Starter Thymeleaf  | 3.3.1  | Template engine para views HTML           | (padrão) |
+| Java JWT (Auth0) 4.4.0         | 4.4.0  | Geração e validação de JSON Web Tokens    | (padrão) |
+| Spring Boot Starter Security   | 3.3.1  | Segurança autenticação e autorização      | (padrão) |
+| Spring Boot Starter Data Redis | 3.3.1  | Integração com Redis para cache/mensagens | (padrão) |
+| MySQL Connector/J              | -      | Driver JDBC para MySQL                    | runtime  |
+| H2 Database                    | -      | Banco em memória para testes              | test     |
+| embedded-redis 0.7.3           | 0.7.3  | Redis embarcado para testes               | test     |
+| Spring Boot Starter Test       | 3.3.1  | Framework de teste do Spring Boot         | test     |
+| Spring Security Test           | 3.3.1  | Testes de segurança                       | test     |
+
+**Requisitos:**
+- Java 21
+- Maven 3.6+
+- MySQL 8.0+
+- Redis 6.0+
 
 ---
 ## Estrutura de Pastas
@@ -71,17 +78,20 @@ src/
 | POST   | `/api/v1/auth/register`                 | Cadastra um novo usuário                                    | ❌            |
 | POST   | `/api/v1/auth/login`                    | Autentica usuário e retorna JWT                             | ❌            |
 | GET    | `/api/v1/auth/verify-email/{token}`     | Verifica o e-mail do usuário com o token                    | ❌            |
+| GET    | `/api/v1/auth/refresh`                  | Renova o access token usando refresh token                  | ❌            |
+| GET    | `/api/v1/auth/resend`                   | Reenvia e-mail de verificação (configurado mas não implementado) | ❌            |
 | GET    | `/api/v1/club/secret`                   | Rota protegida só para usuários logados e com e-mail verificado | ✅            |
 
-
 ## Fluxo de Autenticação
-1. Cadastro: `/api/v1/auth/register` cria o usuário.
+1. **Cadastro**: `/api/v1/auth/register` cria o usuário e envia e-mail de verificação.
 
-2. Verificar e-mail: `/api/v1/auth/verify-email/{token}` verifica o e-mail com o `token` enviado para o e-mail cadastrado.
+2. **Verificar e-mail**: `/api/v1/auth/verify-email/{token}` verifica o e-mail com o `token` enviado para o e-mail cadastrado.
 
-3. Login: `/api/v1/auth/login` retorna Access + Refresh Tokens.
+3. **Login**: `/api/v1/auth/login` retorna Access + Refresh Tokens.
 
-4. Acesso protegido: Endpoints protegidos exigem Access Token no header Authorization: Bearer <token>.
+4. **Renovação de Token**: `/api/v1/auth/refresh` permite renovar o access token usando o refresh token.
+
+5. **Acesso protegido**: Endpoints protegidos exigem Access Token no header Authorization: Bearer <token>.
 
 ## Como instalar o projeto
 
@@ -192,7 +202,7 @@ docker run --name redis-auth -p 6379:6379 -d redis:6.2-alpine
    mvn spring-boot:run
    ```
 
-4. **Acesse a aplicação** em `http://localhost:8080`
+4. **Acesse a aplicação** em `http://localhost:8080/api/v1`
 
 ### Solução de Problemas Comuns
 
@@ -214,6 +224,7 @@ Agora que você tem a aplicação rodando, vamos aprender como usar cada endpoin
 | `/api/v1/auth/register` | POST | Cadastra um novo usuário | ❌ Público |
 | `/api/v1/auth/login` | POST | Autentica usuário e retorna JWT | ❌ Público |
 | `/api/v1/auth/verify-email/{token}` | GET | Verifica e-mail com token | ❌ Público |
+| `/api/v1/auth/refresh` | GET | Renova access token | ❌ Público |
 | `/api/v1/club/secret` | GET | Rota protegida com frases motivacionais | ✅ JWT obrigatório |
 
 #### **Opção 2: Usando Postman/Insomnia**
@@ -229,29 +240,21 @@ Agora que você tem a aplicação rodando, vamos aprender como usar cada endpoin
 4. **Acesse rota protegida** → Use o access token no header Authorization
 5. **Teste renovação** → Use o refresh token quando necessário
 
-
-## Como usar
-
-### Endpoints
-
-- `/api/v1/auth/register` - Register a new user
-- `/api/v1/auth/login` - Authenticate user and get JWT token
-- `/api/v1/auth/verify-email/{token}` - Verify user email with token
-- `/api/v1/club/secret` - Protected route for authenticated users
 ## Exemplos de Requisição
 
 #### Registro
 ```http
 POST /api/v1/auth/register
 Content-Type: application/json
+
 {
   "username": "UserNameTest",
   "email": "Test@email.com",
   "password": "Strong#123"
 }
 ```
-##### Resposta
 
+**Resposta de sucesso:**
 ```http
 HTTP/1.1 201 Created
 Content-Type: application/json
@@ -358,6 +361,27 @@ Content-Type: application/json
 }
 ```
 
+#### Renovação de Token
+```http
+GET /api/v1/auth/refresh
+X-Refresh-Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Resposta de sucesso:**
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "success": true,
+  "message": "Success",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
 #### Acesso à Rota Protegida
 ```http
 GET /api/v1/club/secret
@@ -379,20 +403,45 @@ Content-Type: application/json
 ## Erros Comuns
 | Código | Mensagem                | Causa                              |
 |--------|-------------------------|------------------------------------|
-| 400    | `Invalid credentials`   | Email ou senha inválidos           |
-| 401    | `Token expired`         | Access Token expirou               |
-| 403    | `Invalid refresh token` | Refresh Token inválido ou revogado |
+| 400    | `Validation errors`     | Dados de entrada inválidos         |
+| 400    | `Invalid or expired token` | Token de verificação inválido/expirado |
+| 401    | `REFRESH_TOKEN_INVALID` | Refresh Token inválido ou revogado |
+| 403    | `Email not verified`    | E-mail não foi verificado          |
+| 403    | `User or password is incorrect` | Credenciais inválidas           |
+| 403    | `User not register`     | Usuário não encontrado             |
 | 409    | `User already exists`   | Email já cadastrado                |
-
 
 ## Features
 
-The main features of the application are:
- - User registration and authentication
- - JWT token-based authentication
- - Email verification system
- - Redis-based token storage
-   
+As principais funcionalidades da aplicação são:
+- ✅ Registro e autenticação de usuários
+- ✅ Autenticação baseada em JWT com access e refresh tokens
+- ✅ Sistema de verificação de e-mail
+- ✅ Armazenamento de tokens no Redis
+- ✅ Renovação automática de tokens
+- ✅ Rota protegida com frases motivacionais
+- ✅ Validação de dados de entrada
+- ✅ Criptografia de senhas com BCrypt
+- ✅ Configuração de segurança com Spring Security
+- ✅ Suporte a cache com Redis
+- ✅ Envio de e-mails com templates HTML
+
+## Configurações Importantes
+
+### Variáveis de Ambiente
+```bash
+# Senha do Gmail (obrigatória)
+export EMAIL_PASSWORD="sua_senha_de_app_aqui"
+
+# URL da API (opcional, padrão: http://localhost:4200/verify-email/)
+export API_URL="http://localhost:4200/verify-email/"
+```
+
+### Configurações do Banco
+- **MySQL**: Porta 3306, banco `testeDb`
+- **Redis**: Porta 6379, cache com TTL de 5 minutos
+- **JPA**: DDL auto-update habilitado
+
 ## Links
 
 - Repository: https://github.com/felipemelozx/api-auth
