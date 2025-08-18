@@ -17,7 +17,9 @@ import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AuthService {
@@ -78,5 +80,29 @@ public class AuthService {
     String newAccessToken = tokenService.generateToken(user);
 
     return new LoginSuccess(newAccessToken, refreshToken);
+  }
+
+  public boolean resendEmail(String email) {
+    Optional<User> optionalUser = userService.findByEmail(email);
+    if(optionalUser.isEmpty()) return false;
+    User user = optionalUser.get();
+    if(!user.isVerified() && !user.getTimeVerify().isAfter(Instant.now())) return false;
+    String token = userService.createEmailVerificationToken(user.getEmail());
+    
+    boolean emailWasSend = sendEmail(user.getEmail(), user.getName(), token);
+    if(emailWasSend) return true;
+    return false;
+  }
+
+  protected boolean sendEmail(String email, String name, String token) {
+    try{
+      if(token != null ) {
+        emailService.sendEmail(email, name, generateLinkToVerifyEmail(token));
+        return true;
+      }
+    } catch (MessagingException ex){
+      return false;
+    }
+    return false;
   }
 }

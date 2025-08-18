@@ -83,4 +83,13 @@ public class AuthController {
       LoginFailure failure = (LoginFailure) res;
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(failure.error().toString()));
   }
+
+  @GetMapping("/resend/{email}")
+  public ResponseEntity<ApiResponse<Void>> resendEmail(@PathVariable String email){
+    var res = authService.resendEmail(email);
+    if(res){
+      return ResponseEntity.noContent().build();
+    }
+    return ResponseEntity.badRequest().build();
+  }
 }
