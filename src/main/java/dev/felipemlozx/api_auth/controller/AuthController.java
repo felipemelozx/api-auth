@@ -1,6 +1,10 @@
 package dev.felipemlozx.api_auth.controller;
 
 import dev.felipemlozx.api_auth.core.AuthError;
+import dev.felipemlozx.api_auth.core.Email;
+import dev.felipemlozx.api_auth.core.EmailCheckFailure;
+import dev.felipemlozx.api_auth.core.EmailCheckResult;
+import dev.felipemlozx.api_auth.core.EmailCheckSuccess;
 import dev.felipemlozx.api_auth.core.LoginFailure;
 import dev.felipemlozx.api_auth.core.LoginResult;
 import dev.felipemlozx.api_auth.core.LoginSuccess;
@@ -43,7 +47,7 @@ public class AuthController {
   public ResponseEntity<ApiResponse<ResponseLoginDTO>> login(@RequestBody LoginDTO body){
     LoginResult result = authService.login(body);
 
-    if(result instanceof LoginSuccess(var accessToken, var refreshToken)) {
+    if(result instanceof LoginSuccess(String accessToken, String refreshToken)) {
       ResponseLoginDTO response = new ResponseLoginDTO(accessToken, refreshToken);
       return ResponseEntity.ok().body(ApiResponse.success(response));
     }
@@ -71,5 +75,39 @@ public class AuthController {
     }
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .body(ApiResponse.error("Invalid or expired token", null));
+  }
+
+  @GetMapping("/refresh")
+  public ResponseEntity<ApiResponse<ResponseLoginDTO>> refreshAccessToken(@RequestHeader("X-Refresh-Token") String refreshToken  ){
+      LoginResult res = authService.verifyToken(refreshToken);
+      if(res instanceof LoginSuccess(String accessToken, String token)){
+        return ResponseEntity.ok().body(ApiResponse.success(new ResponseLoginDTO(accessToken, token)));
+      }
+
+      LoginFailure failure = (LoginFailure) res;
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(failure.error().toString()));
+  }
+
+  @PostMapping("/resend-verification-email/{email}")
+  public ResponseEntity<ApiResponse<String>> resendEmail(@PathVariable String email){
+    EmailCheckResult result = authService.resendEmail(email);
+    if(result instanceof EmailCheckSuccess){
+      return ResponseEntity.noContent().build();
+    }
+    EmailCheckFailure failure = (EmailCheckFailure) result;
+    if(failure.error().equals(Email.EMAIL_NOT_SEND)){
+      return ResponseEntity.internalServerError()
+          .body(ApiResponse.error("Email not send!"));
+    }
+    if(failure.error().equals(Email.EMAIL_NOT_SEND_CAUSE_USER_NOT_FOUND)){
+      return ResponseEntity.badRequest()
+           .body(ApiResponse.error("User with this email " + email + " not found."));
+    }
+    if(failure.error().equals(Email.TIME_TO_CHECK_EMAIL_IS_OVER)){
+      return ResponseEntity.badRequest()
+          .body(ApiResponse.error("Time to verified your email is over, please register aBgain."));
+    }
+    return ResponseEntity.badRequest()
+        .body(ApiResponse.error("Email has already been verified."));
   }
 }

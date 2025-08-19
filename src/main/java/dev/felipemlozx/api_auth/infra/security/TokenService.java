@@ -6,8 +6,7 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
-import dev.felipemlozx.api_auth.dto.UserJwtDTO;
-
+import dev.felipemlozx.api_auth.entity.User;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -21,17 +20,18 @@ import java.util.List;
 public class TokenService {
   @Value("${api.secret.key}")
   private String secret;
+  private static final String ISSUER = "API-auth";
 
 
-  public String generateToken(UserJwtDTO userJwtDTO) {
+  public String generateToken(User user) {
     try {
         Algorithm algorithm = Algorithm.HMAC256(secret);
         
         return JWT.create()
-                .withIssuer("API-AUTH")
-                .withClaim("id",userJwtDTO.id())
-                .withClaim("name",userJwtDTO.name())
-                .withClaim("email",userJwtDTO.email())
+                .withIssuer(ISSUER)
+                .withClaim("id", user.getId())
+                .withClaim("name", user.getName())
+                .withClaim("email", user.getEmail())
                 .withClaim("roles", List.of("USER_ROLE"))
                 .withIssuedAt(new Date())
                 .withExpiresAt(getExpires())
@@ -40,14 +40,30 @@ public class TokenService {
     } catch (JWTCreationException e) {
         throw new IllegalStateException("Error while generating token", e);
     }
-}
+  }
+
+  public String generateRefreshToken(User user) {
+    try {
+      Algorithm algorithm = Algorithm.HMAC256(secret);
+
+      return JWT.create()
+          .withIssuer(ISSUER)
+          .withClaim("id", user.getId())
+          .withIssuedAt(new Date())
+          .withExpiresAt(getRefreshExpires())
+          .sign(algorithm);
+
+    } catch (JWTCreationException e) {
+      throw new IllegalStateException("Error while generating refresh token", e);
+    }
+  }
 
   public DecodedJWT validateToken(String token) {
     try {
         Algorithm algorithm = Algorithm.HMAC256(secret);
 
         return JWT.require(algorithm)
-                .withIssuer("API-AUTH")
+                .withIssuer(ISSUER)
                 .build()
                 .verify(token);
 
@@ -57,6 +73,10 @@ public class TokenService {
 }
 
   private Instant getExpires() {
-    return LocalDateTime.now().plusHours(3).toInstant(ZoneOffset.ofHours(-3));
+    return LocalDateTime.now().plusHours(1).toInstant(ZoneOffset.ofHours(-3));
+  }
+
+  private Instant getRefreshExpires() {
+    return LocalDateTime.now().plusDays(7).toInstant(ZoneOffset.ofHours(-3));
   }
 }

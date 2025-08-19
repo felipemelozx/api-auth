@@ -8,13 +8,11 @@ import dev.felipemlozx.api_auth.core.LoginResult;
 import dev.felipemlozx.api_auth.core.LoginSuccess;
 import dev.felipemlozx.api_auth.dto.CreateUserDTO;
 import dev.felipemlozx.api_auth.dto.LoginDTO;
-import dev.felipemlozx.api_auth.dto.UserJwtDTO;
 import dev.felipemlozx.api_auth.entity.User;
 import dev.felipemlozx.api_auth.infra.security.TokenService;
 import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -54,17 +52,17 @@ class AuthServiceTest {
 
   @Test
   void shouldRegisterUserAndSendVerificationEmail_whenDataIsValid() throws MessagingException {
-    CreateUserDTO CreateUserDTO = new CreateUserDTO("name", "test@gmail.com", "Password123!");
+    CreateUserDTO createUserDTO = new CreateUserDTO("name", "test@gmail.com", "Password123!");
     String token = UUID.randomUUID().toString();
 
-    when(userService.register(CreateUserDTO)).thenReturn(List.of());
-    when(userService.createEmailVerificationToken(CreateUserDTO.email())).thenReturn(token);
+    when(userService.register(createUserDTO)).thenReturn(List.of());
+    when(userService.createEmailVerificationToken(createUserDTO.email())).thenReturn(token);
     doNothing().when(emailService).sendEmail(anyString(), anyString(), anyString());
 
-    List<String> result = authService.register(CreateUserDTO);
+    List<String> result = authService.register(createUserDTO);
 
     verify(emailService).sendEmail(anyString(), anyString(), anyString());
-    verify(userService).createEmailVerificationToken(CreateUserDTO.email());
+    verify(userService).createEmailVerificationToken(createUserDTO.email());
     assertTrue(result.isEmpty());
   }
 
@@ -80,16 +78,18 @@ class AuthServiceTest {
     LoginDTO loginDTO = new LoginDTO("test@gmail.com", "Password123!");
     User user = new User("test", "test@gmail.com", "Password123!", true);
     String token = UUID.randomUUID().toString();
+    String refreshToken = UUID.randomUUID().toString();
 
     when(userService.login(loginDTO)).thenReturn(new AuthCheckSuccess(user));
     when(tokenService.generateToken(any())).thenReturn(token);
+    when(tokenService.generateRefreshToken(any())).thenReturn(refreshToken);
 
     LoginResult result = authService.login(loginDTO);
 
     verify(userService).login(loginDTO);
 
-    LoginSuccess expected = new LoginSuccess(token, token);
-    assertTrue(expected.equals(result));
+    LoginSuccess expected = new LoginSuccess(token, refreshToken);
+    assertEquals(expected, result);
   }
 
   @Test
@@ -100,7 +100,7 @@ class AuthServiceTest {
 
     LoginFailure response = (LoginFailure) authService.login(loginDTO);
 
-    assertTrue(response.error().equals(error.error()));
+    assertEquals(response.error(), error.error());
     verify(userService).login(loginDTO);
   }
 
@@ -120,14 +120,14 @@ class AuthServiceTest {
 
   @Test
   void shouldNotSendVerificationEmail_whenRegisterReturnsNonEmptyList() throws MessagingException {
-    CreateUserDTO CreateUserDTO = new CreateUserDTO("name", "test@gmail.com", "Password123!");
+    CreateUserDTO createUserDTO = new CreateUserDTO("name", "test@gmail.com", "Password123!");
     List<String> errors = List.of("Password is invalid");
 
-    when(userService.register(CreateUserDTO)).thenReturn(errors);
+    when(userService.register(createUserDTO)).thenReturn(errors);
 
-    List<String> result = authService.register(CreateUserDTO);
+    List<String> result = authService.register(createUserDTO);
 
-    verify(userService).register(CreateUserDTO);
+    verify(userService).register(createUserDTO);
     verify(userService, never()).createEmailVerificationToken(anyString());
     verify(emailService, never()).sendEmail(anyString(), anyString(), anyString());
     assertEquals(errors, result);
@@ -135,15 +135,16 @@ class AuthServiceTest {
 
   @Test
   void shouldNotSedEmailWhenTokenIsInValid() throws MessagingException {
-    CreateUserDTO CreateUserDTO = new CreateUserDTO("name", "test@gmail.com", "Password123!");
+    CreateUserDTO createUserDTO = new CreateUserDTO("name", "test@gmail.com", "Password123!");
 
-    when(userService.register(CreateUserDTO)).thenReturn(List.of());
-    when(userService.createEmailVerificationToken(CreateUserDTO.email())).thenReturn(null);
+    when(userService.register(createUserDTO)).thenReturn(List.of());
+    when(userService.createEmailVerificationToken(createUserDTO.email())).thenReturn(null);
 
-    List<String> result = authService.register(CreateUserDTO);
+    List<String> result = authService.register(createUserDTO);
 
-    verify(userService).register(CreateUserDTO);
-    verify(userService).createEmailVerificationToken(CreateUserDTO.email());
+    verify(userService).register(createUserDTO);
+    verify(userService).createEmailVerificationToken(createUserDTO.email());
     verify(emailService, never()).sendEmail(anyString(), anyString(), anyString());
+    assertTrue(result.isEmpty());
   }
 }

@@ -95,6 +95,10 @@ public class UserService {
     return true;
   }
 
+  public Optional<User> findByEmail(String email) {
+    return userRepository.findByEmail(email);
+  }
+
   // 30 minutos em milissegundos
   @Scheduled(fixedRate = 1800000)
   public void deleteUserNotVerify() {

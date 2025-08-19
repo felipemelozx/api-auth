@@ -1,20 +1,28 @@
 package dev.felipemlozx.api_auth.services;
 
+import com.auth0.jwt.interfaces.DecodedJWT;
 import dev.felipemlozx.api_auth.core.AuthCheckFailure;
 import dev.felipemlozx.api_auth.core.AuthCheckResult;
 import dev.felipemlozx.api_auth.core.AuthCheckSuccess;
+import dev.felipemlozx.api_auth.core.AuthError;
+import dev.felipemlozx.api_auth.core.Email;
+import dev.felipemlozx.api_auth.core.EmailCheckFailure;
+import dev.felipemlozx.api_auth.core.EmailCheckResult;
+import dev.felipemlozx.api_auth.core.EmailCheckSuccess;
 import dev.felipemlozx.api_auth.core.LoginFailure;
 import dev.felipemlozx.api_auth.core.LoginResult;
 import dev.felipemlozx.api_auth.core.LoginSuccess;
 import dev.felipemlozx.api_auth.dto.CreateUserDTO;
 import dev.felipemlozx.api_auth.dto.LoginDTO;
-import dev.felipemlozx.api_auth.dto.UserJwtDTO;
+import dev.felipemlozx.api_auth.entity.User;
 import dev.felipemlozx.api_auth.infra.security.TokenService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AuthService {
@@ -55,14 +63,50 @@ public class AuthService {
 
     var success = (AuthCheckSuccess) checkResult;
     var user = success.user();
-    UserJwtDTO userJwtDTO = new UserJwtDTO(user.getId(), user.getName(), user.getEmail());
-    String accessToken = tokenService.generateToken(userJwtDTO);
-    String refreshToken = tokenService.generateToken(userJwtDTO);
+    String accessToken = tokenService.generateToken(user);
+    String refreshToken = tokenService.generateRefreshToken(user);
 
     return new LoginSuccess(accessToken, refreshToken);
   }
 
   public boolean verifyEmailToken(String token) {
     return userService.verifyEmailToken(token);
+  }
+
+  public LoginResult verifyToken(String refreshToken) {
+    DecodedJWT res = tokenService.validateToken(refreshToken);
+    if(res == null){
+      return new LoginFailure(AuthError.REFRESH_TOKEN_INVALID);
+    }
+    long userId = res.getClaim("id").asLong();
+    User user = userService.findById(userId);
+    String newAccessToken = tokenService.generateToken(user);
+
+    return new LoginSuccess(newAccessToken, refreshToken);
+  }
+
+  public EmailCheckResult resendEmail(String email) {
+    Optional<User> optionalUser = userService.findByEmail(email);
+    if(optionalUser.isEmpty()) return new EmailCheckFailure(Email.EMAIL_NOT_SEND_CAUSE_USER_NOT_FOUND);
+    User user = optionalUser.get();
+    if(user.isVerified()) return new EmailCheckFailure(Email.USER_IS_VERIFIED);
+    if(!user.getTimeVerify().isAfter(Instant.now())) return new EmailCheckFailure(Email.TIME_TO_CHECK_EMAIL_IS_OVER);
+
+    String token = userService.createEmailVerificationToken(user.getEmail());
+    boolean emailWasSend = sendEmail(user.getEmail(), user.getName(), token);
+    if(!emailWasSend) return new EmailCheckFailure(Email.EMAIL_NOT_SEND);
+    return new EmailCheckSuccess(Email.EMAIL_SEND);
+  }
+
+  protected boolean sendEmail(String email, String name, String token) {
+    try{
+      if(token != null ) {
+        emailService.sendEmail(email, name, generateLinkToVerifyEmail(token));
+        return true;
+      }
+    } catch (MessagingException ex){
+      return false;
+    }
+    return false;
   }
 }
