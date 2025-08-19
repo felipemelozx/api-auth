@@ -1,6 +1,10 @@
 package dev.felipemlozx.api_auth.controller;
 
 import dev.felipemlozx.api_auth.core.AuthError;
+import dev.felipemlozx.api_auth.core.Email;
+import dev.felipemlozx.api_auth.core.EmailCheckFailure;
+import dev.felipemlozx.api_auth.core.EmailCheckResult;
+import dev.felipemlozx.api_auth.core.EmailCheckSuccess;
 import dev.felipemlozx.api_auth.core.LoginFailure;
 import dev.felipemlozx.api_auth.core.LoginResult;
 import dev.felipemlozx.api_auth.core.LoginSuccess;
@@ -84,12 +88,26 @@ public class AuthController {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(failure.error().toString()));
   }
 
-  @GetMapping("/resend/{email}")
-  public ResponseEntity<ApiResponse<Void>> resendEmail(@PathVariable String email){
-    var res = authService.resendEmail(email);
-    if(res){
+  @PostMapping("/resend-verification-email/{email}")
+  public ResponseEntity<ApiResponse<String>> resendEmail(@PathVariable String email){
+    EmailCheckResult result = authService.resendEmail(email);
+    if(result instanceof EmailCheckSuccess){
       return ResponseEntity.noContent().build();
     }
-    return ResponseEntity.badRequest().build();
+    EmailCheckFailure failure = (EmailCheckFailure) result;
+    if(failure.error().equals(Email.EMAIL_NOT_SEND)){
+      return ResponseEntity.internalServerError()
+          .body(ApiResponse.error("Email not send!"));
+    }
+    if(failure.error().equals(Email.EMAIL_NOT_SEND_CAUSE_USER_NOT_FOUND)){
+      return ResponseEntity.badRequest()
+           .body(ApiResponse.error("User with this email " + email + " not found."));
+    }
+    if(failure.error().equals(Email.TIME_TO_CHECK_EMAIL_IS_OVER)){
+      return ResponseEntity.badRequest()
+          .body(ApiResponse.error("Time to verified your email is over, please register aBgain."));
+    }
+    return ResponseEntity.badRequest()
+        .body(ApiResponse.error("Email has already been verified."));
   }
 }

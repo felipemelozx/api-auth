@@ -5,12 +5,15 @@ import dev.felipemlozx.api_auth.core.AuthCheckFailure;
 import dev.felipemlozx.api_auth.core.AuthCheckResult;
 import dev.felipemlozx.api_auth.core.AuthCheckSuccess;
 import dev.felipemlozx.api_auth.core.AuthError;
+import dev.felipemlozx.api_auth.core.Email;
+import dev.felipemlozx.api_auth.core.EmailCheckFailure;
+import dev.felipemlozx.api_auth.core.EmailCheckResult;
+import dev.felipemlozx.api_auth.core.EmailCheckSuccess;
 import dev.felipemlozx.api_auth.core.LoginFailure;
 import dev.felipemlozx.api_auth.core.LoginResult;
 import dev.felipemlozx.api_auth.core.LoginSuccess;
 import dev.felipemlozx.api_auth.dto.CreateUserDTO;
 import dev.felipemlozx.api_auth.dto.LoginDTO;
-import dev.felipemlozx.api_auth.dto.UserJwtDTO;
 import dev.felipemlozx.api_auth.entity.User;
 import dev.felipemlozx.api_auth.infra.security.TokenService;
 import jakarta.mail.MessagingException;
@@ -82,16 +85,17 @@ public class AuthService {
     return new LoginSuccess(newAccessToken, refreshToken);
   }
 
-  public boolean resendEmail(String email) {
+  public EmailCheckResult resendEmail(String email) {
     Optional<User> optionalUser = userService.findByEmail(email);
-    if(optionalUser.isEmpty()) return false;
+    if(optionalUser.isEmpty()) return new EmailCheckFailure(Email.EMAIL_NOT_SEND_CAUSE_USER_NOT_FOUND);
     User user = optionalUser.get();
-    if(!user.isVerified() && !user.getTimeVerify().isAfter(Instant.now())) return false;
+    if(user.isVerified()) return new EmailCheckFailure(Email.USER_IS_VERIFIED);
+    if(!user.getTimeVerify().isAfter(Instant.now())) return new EmailCheckFailure(Email.TIME_TO_CHECK_EMAIL_IS_OVER);
+
     String token = userService.createEmailVerificationToken(user.getEmail());
-    
     boolean emailWasSend = sendEmail(user.getEmail(), user.getName(), token);
-    if(emailWasSend) return true;
-    return false;
+    if(!emailWasSend) return new EmailCheckFailure(Email.EMAIL_NOT_SEND);
+    return new EmailCheckSuccess(Email.EMAIL_SEND);
   }
 
   protected boolean sendEmail(String email, String name, String token) {
