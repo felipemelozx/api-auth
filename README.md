@@ -6,6 +6,42 @@ Além disso, os tokens de verificação são armazenados no Redis junto com o e-
 
 ---
 
+## Sumário
+
+- [Tecnologias](#tecnologias)
+- [Dependências](#dependências)
+- [Requisitos](#requisitos)
+- [Estrutura de Pastas](#estrutura-de-pastas)
+- [CORS](#cors)
+- [JWT e Segurança](#jwt-e-segurança)
+- [Endpoints](#endpoints)
+- [Fluxo de Autenticação](#fluxo-de-autenticação)
+- [Como instalar o projeto](#como-instalar-o-projeto)
+  - [Pré-requisitos](#pré-requisitos)
+  - [Configuração do Banco de Dados MySQL](#configuração-do-banco-de-dados-mysql)
+  - [Configuração do Redis](#configuração-do-redis)
+  - [Configuração do Email (Gmail)](#configuração-do-email-gmail)
+  - [Executando com Docker (Banco e Cache)](#executando-com-docker-banco-e-cache)
+  - [Executando com Docker Compose](#executando-com-docker-compose)
+  - [Build e execução da aplicação (Dockerfile)](#build-e-execução-da-aplicação-dockerfile)
+  - [Download e Execução (Local)](#download-e-execução)
+  - [Solução de Problemas Comuns](#solução-de-problemas-comuns)
+- [Como usar a API](#como-usar-a-api)
+  - [Endpoints Disponíveis](#endpoints-disponíveis)
+  - [Fluxo Completo de Teste](#fluxo-completo-de-teste)
+  - [Exemplos de Requisição](#exemplos-de-requisição)
+- [Erros Comuns](#erros-comuns)
+- [Features](#features)
+- [Configurações Importantes](#configurações-importantes)
+  - [Variáveis de Ambiente](#variáveis-de-ambiente)
+  - [Configurações do Banco](#configurações-do-banco)
+- [Testes](#testes)
+- [Links](#links)
+- [Versioning](#versioning)
+- [Authors](#authors)
+
+---
+
 ## Tecnologias
 
 <div>
@@ -51,6 +87,10 @@ Além disso, os tokens de verificação são armazenados no Redis junto com o e-
 ├── workflows/
 │     └── java-ci.yml              # Workflow para build e test da aplicação
 │
+docker/
+├── docker-compose.yaml           # MySQL e Redis para desenvolvimento
+├── Dockerfile                    # Imagem da aplicação (JAR)
+│
 src/
 ├── main/
 │   ├── java/
@@ -68,7 +108,29 @@ src/
 │   └── resources/
 │       └── application.yaml       # Configurações (Porta, banco, JWT, etc)
 │       └── templates/             # Templates para o envio de email
+└── test/
+    └── java/ ...                  # Testes unitários e de integração (H2 + Redis embarcado)
 ```
+
+---
+## CORS
+
+- Origem permitida: `http://localhost:4200`
+- Métodos: `GET, POST, PUT, DELETE, OPTIONS`
+- Credenciais: `false`
+
+Caso precise liberar outras origens, ajuste em `WebConfig` (`dev.felipemlozx.api_auth.infra.config.WebConfig`).
+
+---
+## JWT e Segurança
+
+- Context path: `/api/v1`
+- Endpoints públicos: `POST /auth/login`, `POST /auth/register`, `GET /auth/verify-email/**`, `GET /auth/refresh`, `POST /auth/resend-verification-email/**`
+- Endpoints protegidos: demais rotas exigem `Authorization: Bearer <accessToken>`
+- Claims do Access Token: `id`, `name`, `email`, `roles`
+- Expiração: Access Token (1h), Refresh Token (7 dias)
+
+A chave secreta do JWT é lida da propriedade `api.secret.key` (pode ser definida via variável de ambiente, ver seção de variáveis).
 
 ---
 ## Endpoints
@@ -79,7 +141,7 @@ src/
 | POST   | `/api/v1/auth/login`                    | Autentica usuário e retorna JWT                             | ❌            |
 | GET    | `/api/v1/auth/verify-email/{token}`     | Verifica o e-mail do usuário com o token                    | ❌            |
 | GET    | `/api/v1/auth/refresh`                  | Renova o access token usando refresh token                  | ❌            |
-| GET    | `/api/v1/auth/resend`                   | Reenvia e-mail de verificação (configurado mas não implementado) | ❌            |
+| POST    | `/api/v1/auth/resend-verification-email/`                   | Reenvia e-mail de verificação (configurado mas não implementado) | ❌            |
 | GET    | `/api/v1/club/secret`                   | Rota protegida só para usuários logados e com e-mail verificado | ✅            |
 
 ## Fluxo de Autenticação
@@ -88,10 +150,8 @@ src/
 2. **Verificar e-mail**: `/api/v1/auth/verify-email/{token}` verifica o e-mail com o `token` enviado para o e-mail cadastrado.
 
 3. **Login**: `/api/v1/auth/login` retorna Access + Refresh Tokens.
-
-4. **Renovação de Token**: `/api/v1/auth/refresh` permite renovar o access token usando o refresh token.
-
-5. **Acesso protegido**: Endpoints protegidos exigem Access Token no header Authorization: Bearer <token>.
+4. **Renovação de Token**: `/api/v1/auth/refresh` permite renovar o access token usando o refresh token (header `X-Refresh-Token`).
+5. **Acesso protegido**: Endpoints protegidos exigem Access Token no header `Authorization: Bearer <token>`.
 
 ## Como instalar o projeto
 
@@ -107,7 +167,7 @@ Antes de começar, certifique-se de ter instalado:
 - **Redis 6.0+** - [Download oficial](https://redis.io/download)
 - **Git** - [Download oficial](https://git-scm.com/downloads)
 
-> **Dica**: Se preferir usar Docker, você pode executar MySQL e Redis em containers. Veja a seção [Executando com Docker](#executando-com-docker) abaixo.
+> Caso prefira, use Docker para executar MySQL e Redis. Veja abaixo.
 
 ### Configuração do Banco de Dados MySQL
 
@@ -172,7 +232,7 @@ Para enviar e-mails de verificação, você precisa configurar o Gmail:
        password: ${EMAIL_PASSWORD}
    ```
 
-### Executando com Docker (Opcional)
+### Executando com Docker (Banco e Cache)
 
 Se preferir usar Docker para MySQL e Redis:
 
@@ -183,6 +243,8 @@ docker run --name mysql-auth -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=teste
 # Redis
 docker run --name redis-auth -p 6379:6379 -d redis:6.2-alpine
 ```
+
+> Observação: A propriedade `api.secret.key` pode ser definida via variável de ambiente `API_SECRET_KEY` (Spring faz o binding automaticamente).
 
 ### Download e Execução
 
@@ -217,20 +279,17 @@ docker run --name redis-auth -p 6379:6379 -d redis:6.2-alpine
 
 Agora que você tem a aplicação rodando, vamos aprender como usar cada endpoint e testar a funcionalidade.
 
-### 🔗 Endpoints Disponíveis
+### Endpoints Disponíveis
 
 | Endpoint | Método | Descrição | Autenticação |
 |-----------|--------|-----------|--------------|
 | `/api/v1/auth/register` | POST | Cadastra um novo usuário | ❌ Público |
 | `/api/v1/auth/login` | POST | Autentica usuário e retorna JWT | ❌ Público |
 | `/api/v1/auth/verify-email/{token}` | GET | Verifica e-mail com token | ❌ Público |
-| `/api/v1/auth/refresh` | GET | Renova access token | ❌ Público |
+| `/api/v1/auth/refresh` | GET | Renova access token (header `X-Refresh-Token`) | ❌ Público |
+| `/api/v1/auth/resend-verification-email/{email}` | POST | Reenvia e-mail de verificação | ❌ Público |
 | `/api/v1/club/secret` | GET | Rota protegida com frases motivacionais | ✅ JWT obrigatório |
 
-#### **Opção 2: Usando Postman/Insomnia**
-1. Importe os endpoints acima
-2. Configure as variáveis de ambiente para o token JWT
-3. Teste o fluxo completo de autenticação
 
 ### Fluxo Completo de Teste
 
@@ -382,6 +441,14 @@ Content-Type: application/json
 }
 ```
 
+#### Reenvio de E-mail de Verificação
+```http
+POST /api/v1/auth/resend-verification-email/{email}
+```
+
+- Sucesso: `204 No Content`
+- Possíveis erros: `400` (email não encontrado, tempo de verificação expirado, já verificado), `500` (falha no envio de e-mail)
+
 #### Acesso à Rota Protegida
 ```http
 GET /api/v1/club/secret
@@ -401,15 +468,15 @@ Content-Type: application/json
 ```
 
 ## Erros Comuns
-| Código | Mensagem                | Causa                              |
-|--------|-------------------------|------------------------------------|
-| 400    | `Validation errors`     | Dados de entrada inválidos         |
-| 400    | `Invalid or expired token` | Token de verificação inválido/expirado |
-| 401    | `REFRESH_TOKEN_INVALID` | Refresh Token inválido ou revogado |
-| 403    | `Email not verified`    | E-mail não foi verificado          |
-| 403    | `User or password is incorrect` | Credenciais inválidas           |
-| 403    | `User not register`     | Usuário não encontrado             |
-| 409    | `User already exists`   | Email já cadastrado                |
+| Código | Mensagem                       | Causa                              |
+|--------|--------------------------------|------------------------------------|
+| 400    | `Validation errors`            | Dados de entrada inválidos         |
+| 400    | `Invalid or expired token`     | Token de verificação inválido/expirado |
+| 401    | `REFRESH_TOKEN_INVALID`        | Refresh Token inválido ou revogado |
+| 403    | `Email not verified`           | E-mail não foi verificado          |
+| 403    | `User or password is incorrect`| Credenciais inválidas              |
+| 403    | `User not register`            | Usuário não encontrado             |
+| 409    | `User already exists`          | Email já cadastrado                |
 
 ## Features
 
@@ -433,14 +500,25 @@ As principais funcionalidades da aplicação são:
 # Senha do Gmail (obrigatória)
 export EMAIL_PASSWORD="sua_senha_de_app_aqui"
 
-# URL da API (opcional, padrão: http://localhost:4200/verify-email/)
+# URL base para o link de verificação, (Url do front-end onde vai ter a request para o back-end)
 export API_URL="http://localhost:4200/verify-email/"
+
+# Chave secreta do JWT (obrigatória em ambientes não locais)
+export API_SECRET_KEY="minha_chave_segura"
 ```
+
+> Dica: O Spring Boot faz binding automático de variáveis de ambiente. `API_SECRET_KEY` substitui `api.secret.key` do `application.yaml` se definida.
 
 ### Configurações do Banco
 - **MySQL**: Porta 3306, banco `testeDb`
-- **Redis**: Porta 6379, cache com TTL de 5 minutos
+- **Redis**: Porta 6379, cache com TTL de 5 minutos (config Geral) e 15 minutos via `RedisCacheManager`
 - **JPA**: DDL auto-update habilitado
+
+## Testes
+
+- Execute: `mvn test`
+- Banco de testes: H2 em memória
+- Redis de testes: Redis embarcado (`embedded-redis 0.7.3`)
 
 ## Links
 
